@@ -1,0 +1,589 @@
+{
+  "_meta": {
+    "description": "Données de référence du projet Sirius, destinées à alimenter les tableaux et encarts du wiki explorations360. Toute valeur porte un statut de vérification.",
+    "genere_le": "2026-07-26",
+    "source_de_verite": "docs/API_REELLE_Sirius.md",
+    "statuts": {
+      "verifie": "mesuré ou capturé sur le robot de Phil",
+      "documente": "écrit dans la documentation officielle du constructeur",
+      "deduit": "déduit du firmware ou du comportement, non confirmé",
+      "a_confirmer": "hypothèse de travail, ne pas publier comme un fait"
+    },
+    "revision_dossier": "r6",
+    "revision_dossier_date": "2026-07-26",
+    "nouveautes_r3": "statut du firmware passé à vérifié (2.5.0 bêta du 23/07) ; changelog_public corrigé ; nouveaux blocs changelog_firmware, console_constructeur, canaux_ota ; outil_pilotage en v2.4.",
+    "nouveautes_r4": "correction du réveil à distance (il est possible) ; outil en v2.5 avec la correction de cache.",
+    "nouveautes_r5": "réponses aux questions d'intégration (§10) ; exception du premier réveil après mise sous tension ; annexe rapport_capteurs ; outil en v2.6.",
+    "nouveautes_r6": "les commandes de posture couché / debout sont vérifiées sur le robot réel."
+  },
+  "materiel": {
+    "modele": "Hengbot Sirius",
+    "degres_de_liberte": {
+      "total": 14,
+      "tete": 2,
+      "par_patte": 3,
+      "statut": "documente"
+    },
+    "dimensions_mm": {
+      "l": 250,
+      "p": 130,
+      "h": 250,
+      "statut": "documente"
+    },
+    "masse_g": {
+      "valeur": 960,
+      "statut": "documente"
+    },
+    "charge_utile_g": {
+      "valeur": 300,
+      "statut": "documente"
+    },
+    "batterie_mah": {
+      "valeur": 2250,
+      "statut": "documente"
+    },
+    "autonomie_min": {
+      "actif": "45-50",
+      "statut": "documente"
+    },
+    "camera": {
+      "capteur_mp": 8,
+      "resolution_max": "1080p",
+      "statut": "documente"
+    },
+    "ecran_tete_pouces": {
+      "valeur": 1.8,
+      "statut": "documente"
+    },
+    "soc": {
+      "valeur": "D-Robotics RDK X3 (Horizon Sunrise X3)",
+      "bpu_tops": 5,
+      "statut": "documente"
+    },
+    "os": {
+      "valeur": "Ubuntu 22.04 + ROS 2 Humble",
+      "statut": "verifie"
+    },
+    "encodeurs": {
+      "valeur": "magnétiques haute précision sur les articulations",
+      "statut": "documente"
+    }
+  },
+  "versions": {
+    "firmware_robot": {
+      "valeur": "2.5.0 (canal bêta)",
+      "statut": "verifie",
+      "installee_le": "2026-07-23",
+      "taille": "107,54 Mo",
+      "preuve": "Centre de mise à jour du robot (http://8.163.38.44:8082/v2.5.0/ota-update) : « CURRENT VERSION 2.5.0 — System is up to date », vignette 2.5.0 marquée INSTALLED. Relevé le 26/07/2026, robot connecté.",
+      "note": "Le canal bêta est en avance sur le canal stable, qui en est à la 2.4.8 du 17/07/2026."
+    },
+    "api_websocket_embarquee": {
+      "valeur": "Sirius Core API 4.0.0",
+      "statut": "verifie",
+      "note": "Renvoyée par le robot dans server_info au handshake."
+    },
+    "paquet_source_disponible": {
+      "valeur": "2.3.6",
+      "statut": "verifie",
+      "note": "Le paquet dont on disposait localement est ANTÉRIEUR au firmware du robot. L'architecture a été refondue entre les deux : ne pas s'y fier."
+    },
+    "app_officielle_documentee": {
+      "valeur": "240726",
+      "statut": "documente",
+      "note": "Numéro cité dans la doc constructeur — soit une compilation de juillet 2024, ce qui date la documentation."
+    },
+    "changelog_public": {
+      "valeur": "existe, mais non publié sur le web",
+      "statut": "verifie",
+      "note": "CORRECTION du 26/07 : nous avions écrit qu'aucun journal de version n'existait. Le constructeur en tient un, détaillé, version par version — mais uniquement dans le Centre de mise à jour servi à l'intérieur de sa console, page accessible seulement après connexion d'un robot. Rien n'est indexé sur le web, ce qui explique la recherche infructueuse.",
+      "adresse": "http://8.163.38.44:8082/<version>/ota-update"
+    },
+    "branche_interface_debogage": {
+      "valeur": "2.5.0",
+      "statut": "verifie",
+      "note": "Chemin versionné /v2.5.0/... de la console du constructeur, hébergée sur http://8.163.38.44:8082. Le numéro de la console suit celui du firmware installé."
+    },
+    "canaux_ota": {
+      "release": "3 versions stables, la plus récente 2.4.8 du 17/07/2026",
+      "beta": "8 versions de test, la plus récente 2.5.0 du 23/07/2026",
+      "statut": "verifie"
+    }
+  },
+  "canaux_acces": [
+    {
+      "canal": "WebSocket principal",
+      "adresse": "ws://<IP>:8765?audience=web",
+      "role": "état poussé + 59 commandes requête/réponse",
+      "statut": "verifie",
+      "documente_par_constructeur": false
+    },
+    {
+      "canal": "WebSocket vidéo",
+      "adresse": "ws://<IP>:8766",
+      "role": "signalisation WebRTC",
+      "statut": "verifie",
+      "documente_par_constructeur": false
+    },
+    {
+      "canal": "REST",
+      "adresse": "http://<IP>:8088/api/v1/…",
+      "role": "config IA, identifiants, compétences, journaux",
+      "statut": "verifie",
+      "documente_par_constructeur": false,
+      "credit": "dspeers a publié cette porte le premier"
+    },
+    {
+      "canal": "UDP",
+      "adresse": "<IP>:8768 (mouvement + LED), <IP>:8770 (yeux)",
+      "role": "streaming de poses Play_Keyframe",
+      "statut": "deduit",
+      "documente_par_constructeur": true
+    },
+    {
+      "canal": "SSH",
+      "adresse": "root@<IP>:22",
+      "role": "accès ROS 2 et déploiement",
+      "statut": "verifie",
+      "documente_par_constructeur": false
+    },
+    {
+      "canal": "ROS 2",
+      "adresse": "à bord, RMW CycloneDDS",
+      "role": "31 nœuds, ~130 topics",
+      "statut": "verifie",
+      "documente_par_constructeur": false
+    },
+    {
+      "canal": "MJPEG",
+      "adresse": "http://<IP>:8080/video_stream",
+      "role": "flux image simple",
+      "statut": "a_confirmer",
+      "documente_par_constructeur": false,
+      "credit": "dspeers"
+    },
+    {
+      "canal": "Interface de débogage du constructeur",
+      "adresse": "http://8.163.38.44:8082/connect?robot=<IP> (hébergée chez Hengbot, PAS sur le robot)",
+      "role": "joystick virtuel, actions, vision, mode autonome ; ouvre ensuite le WebSocket :8765 vers le robot",
+      "statut": "verifie",
+      "documente_par_constructeur": false,
+      "note": "En mode point d'accès, le robot sert lui-même une interface sur http://192.168.233.1:5173. Non testé sur :5173 en réseau local."
+    }
+  ],
+  "capteur_tof": {
+    "topic": "/state_sensor/tof/distance_array",
+    "type_message": "state_sensor_tof/msg/ToFDistanceArray",
+    "unite": "millimètre",
+    "portee_mm": {
+      "min": 11,
+      "max": 2047
+    },
+    "valeur_hors_portee": 2047,
+    "cadence_hz": 38,
+    "zones": 16,
+    "grille": "4x4",
+    "origine_grille": "en bas à gauche (canal 1 = bas-gauche, canal 16 = haut-droite)",
+    "position_physique": "sous le cou, en haut du poitrail — solidaire du CORPS, pas de la tête",
+    "statut": "verifie",
+    "preuve_position": "tête basculée de 0,30 rad (17°) : variation des distances de 1 à 2 mm seulement, sur les trois axes",
+    "auto_occultation": {
+      "bas_du_champ": "pattes avant — une main passée devant ne fait chuter la rangée 0-3 que de 18 %",
+      "haut_du_champ": "mâchoire — obstacle fantôme à 191 mm de moyenne, écart-type 5 mm sur dix sessions",
+      "statut": "verifie"
+    },
+    "signature_au_repos_mm": {
+      "rangee_0_3_bas": [
+        198,
+        219,
+        218,
+        201
+      ],
+      "rangee_4_7": [
+        304,
+        295,
+        291,
+        298
+      ],
+      "rangee_8_11": [
+        780,
+        786,
+        2047,
+        2047
+      ],
+      "rangee_12_15_haut": [
+        2047,
+        765,
+        2047,
+        2047
+      ],
+      "note": "robot debout, champ dégagé. Les rangées basses voient le PLANCHER à distance croissante."
+    },
+    "detection_de_vide": {
+      "principe": "les rangées basses voient le plancher ; s'il disparaît, elles passent hors portée",
+      "cout_materiel": "nul — capteur d'origine",
+      "statut": "a_confirmer",
+      "avertissement": "JAMAIS ÉPROUVÉE au bord d'une vraie table. Ne pas présenter comme une sécurité acquise."
+    }
+  },
+  "marche": {
+    "topic_entree": "/gait_generation_trot/cmd_vel (geometry_msgs/Twist)",
+    "topic_retour": "/gait_generation_trot/filtered_velocity",
+    "unite": "fraction du débattement dans [-1, 1] — PAS des m/s",
+    "statut": "verifie",
+    "preuve": "consigne 0,50 → mesuré 0,500 sur le topic de retour, or 0,50 dépasse la vitesse maximale déclarée du robot",
+    "seuils_observes": {
+      "0.10": "piétine sur place",
+      "0.45_0.50": "marche normale"
+    },
+    "vitesses_max_annoncees": [
+      {
+        "source": "fiche technique officielle",
+        "avant_ms": 0.4
+      },
+      {
+        "source": "documentation API WebSocket officielle",
+        "avant_ms": 0.28,
+        "lateral_ms": 0.3,
+        "rotation_rad_s": 2.0
+      },
+      {
+        "source": "ros2 param dump sur le robot",
+        "avant_ms": 0.24,
+        "arriere_ms": 0.16,
+        "lateral_ms": 0.2,
+        "rotation_rad_s": 1.2
+      }
+    ],
+    "note_editoriale": "Les trois sources se contredisent. Le dire, ne pas choisir arbitrairement."
+  },
+  "tete": {
+    "topic": "/kinematics/ik_subscriber/head_euler_follow (geometry_msgs/Point)",
+    "unite": "radian",
+    "axes": {
+      "x": "tangage (haut/bas)",
+      "y": "lacet (gauche/droite)",
+      "z": "sans effet observable"
+    },
+    "amplitude_sure_rad": 0.35,
+    "butee_rad": "au-delà d'environ 1",
+    "retour_d_angle": "aucun — fk_publisher, head_quaternion et ik_subscriber/pose existent dans le graphe mais ne publient rien",
+    "statut": "verifie"
+  },
+  "securite": {
+    "coupe_circuit_moteurs": {
+      "seuil_permille": 850,
+      "duree_s": 0.8,
+      "unite_telemetrie": "pwm_permille sur 14 moteurs",
+      "reference_normale_permille": 540,
+      "moteur_en_butee_permille": "950-985 soutenus",
+      "statut": "verifie"
+    },
+    "ecretage_robot": {
+      "joint_clamp_enabled": true,
+      "ws_clamp_enabled": true,
+      "joint_jump_thresh_rad": 0.5,
+      "joint_max_rpm": 200,
+      "statut": "verifie"
+    },
+    "angle_mort": {
+      "valeur": "aucun capteur arrière — toute marche arrière est aveugle",
+      "statut": "verifie"
+    },
+    "absents": [
+      "détecteur de chute",
+      "détecteur de collision",
+      "détecteur de vide dédié"
+    ],
+    "protection_couple_firmware": {
+      "valeur": "protection contre la surcharge de couple ajoutée dans le firmware bas niveau en version 2.4.6 (10/06/2026)",
+      "statut": "documente",
+      "source": "notes de version du Centre de mise à jour"
+    }
+  },
+  "deambulation": {
+    "fichier": "scripts/deambulation.py",
+    "version": 12,
+    "ou_ca_tourne": "à bord du robot (le ToF n'existe que sur ROS)",
+    "principe": "apprentissage du décor en marchant sous forme d'enveloppe min/max par zone, puis réaction aux seuls écarts",
+    "iterations": 12,
+    "tests_hors_ligne": 34,
+    "meilleur_resultat_terrain": "11 secondes de marche rectiligne à pleine consigne, esquive d'obstacles, arrêt propre malgré une coupure Wi-Fi",
+    "statut": "a_confirmer",
+    "note": "La v12 n'a pas encore tourné sur le robot au moment de la rédaction. Apports de la v12 : masque de la bande 170-225 mm (signature de la mâchoire) uniquement si les rangées basses ne corroborent pas, et marge proportionnelle au fond appris (30 %, plancher 50 mm) au lieu d'une marge fixe de 120 mm."
+  },
+  "ecosysteme": {
+    "tutoriels_developpeur_youtube": {
+      "nombre": 0,
+      "portee": "toutes langues confondues",
+      "statut": "verifie"
+    },
+    "bindings_ros2_publics": {
+      "nombre": 0,
+      "statut": "verifie"
+    },
+    "depots_independants": [
+      {
+        "nom": "dspeers/sirius-control-panel",
+        "publie": "15-20 juillet 2026",
+        "apport": "REST :8088, flux MJPEG :8080, première documentation d'API reconstituée"
+      },
+      {
+        "nom": "dspeers/sirius-voice-bridge",
+        "publie": "17-20 juillet 2026",
+        "apport": "interception TLS de la reconnaissance vocale ; révèle que la voix transite par le cloud ByteDance / Volcano Engine"
+      },
+      {
+        "nom": "mitchrk/sirius-osrd",
+        "publie": "29 juin 2026",
+        "apport": "dépôt vide"
+      }
+    ],
+    "documentation_officielle": "https://hengbot-dynamics.github.io/heng-docs/docs/intro"
+  },
+  "ros": {
+    "releve_le": "2026-07-25T23:37:24+08:00",
+    "entrees_node_list": 31,
+    "noeuds_distincts": 29,
+    "doublons": [
+      "core_api_node",
+      "camera_publisher_node"
+    ],
+    "topics_environ": 130,
+    "statut": "verifie",
+    "noeuds_reels": [
+      "action_player_node",
+      "ai_interaction_node",
+      "behavior_engine_node",
+      "ble_control_server",
+      "camera_publisher_node",
+      "character_state_node",
+      "core_api_node",
+      "face_detection_bridge",
+      "fan_controller_node",
+      "imu_onbody",
+      "internal_sensor_battery_onbody",
+      "lifecycle_manager_node",
+      "lvgl_gui_node",
+      "modbus_driver",
+      "motor_torque_controller_node",
+      "network_config_node",
+      "ota_update_node",
+      "perception_bridge_node",
+      "production_test_node",
+      "robot_led_controller_node",
+      "sirius_bt",
+      "sirius_gamepad",
+      "sirius_motion_control_node",
+      "state_sensor_tof_node",
+      "sync_manager_node",
+      "user_data_manager",
+      "user_interface_udp_server_node",
+      "wmix_audio_player_node",
+      "xbox_bluetooth_gamepad"
+    ],
+    "noms_du_paquet_2_3_6_qui_ne_tournent_pas": [
+      "gait_generation_trot",
+      "kinematics_ik_sirius",
+      "gesture_detector_bridge",
+      "camera_publisher_ros",
+      "face_tracker",
+      "person_finder_node",
+      "robot_behavior_controller",
+      "emotion_manager",
+      "gamepad_node"
+    ],
+    "avertissement": "Ces noms existent comme paquets/exécutables dans /root/sirius_ros2/install/ et certains de leurs topics sont vivants, mais aucun nœud de ces noms n'est dans ros2 node list. Se fier aux topics, pas aux noms de nœuds."
+  },
+  "imu": {
+    "topics": {
+      "/state_sensor/imu_onbody/imu_publisher/imu_data": "sensor_msgs/msg/Imu",
+      "/state_sensor/imu_onbody/imu_publisher/imu_angle": "geometry_msgs/msg/Vector3",
+      "/state_sensor/imu_onbody/imu_publisher/diagnostic": "diagnostic_msgs/msg/DiagnosticStatus"
+    },
+    "statut": "verifie",
+    "usage_projet": "imu_angle sert de garde-fou : si l'assiette dérive de plus de 0,10 rad par rapport à celle apprise, la géométrie du ToF n'est plus valable et la détection de vide est suspendue.",
+    "documente_par_constructeur": false
+  },
+  "gestes": {
+    "topic_reference_par_le_paquet_2_3_6": "/hobot_hand_gesture_detection [ai_msgs/msg/PerceptionTargets]",
+    "statut": "a_confirmer",
+    "avertissement": "ABSENT de l'inventaire du firmware installé. Le seul topic hobot_* présent est /hobot_mono2d_body_detection. La table de valeurs (2 ThumbUp, 3 Victory, 4 Mute, 5 Palm, 11 Okay, 12/13 Thumb Left/Right, 14 Awesome) est héritée du paquet 2.3.6, non vérifiée.",
+    "pistes_reelles": [
+      "/emotion_manager/gesture_event [std_msgs/msg/String]",
+      "/boot/wake_gesture [sirius_msg/msg/WakeGesture]"
+    ]
+  },
+  "outil_pilotage": {
+    "nom": "Studio 360 pour Sirius",
+    "nom_court": "Studio 360",
+    "sous_titre": "pour Hengbot Sirius — projet indépendant",
+    "ancien_nom": "Sirius Studio (jusqu'à la v2.6 incluse)",
+    "renommage": "Renommé le 26/07/2026, en vigueur à partir de la v2.7 : « Sirius Studio » se confondait avec l'application OFFICIELLE de Hengbot. Les archives déjà diffusées (SiriusStudio_v1.9 à SiriusStudio_v2.6) gardent leur nom de fichier et leurs liens — aucun lien de téléchargement n'est cassé. Les noms de fichiers de code, les routes et les commandes réseau sont inchangés.",
+    "mention_independance_fr": "Studio 360 pour Sirius (Studio 360) est un projet indépendant d'explorations360, sans lien ni affiliation avec Hengbot. Sirius et Hengbot sont des marques de leurs propriétaires respectifs. Ce kit est le fruit d'un travail de rétro-ingénierie de l'API du robot : il n'est ni fourni, ni approuvé, ni soutenu par le constructeur.",
+    "mention_independance_en": "Studio 360 for Sirius (Studio 360) is an independent project by explorations360 — not affiliated with, endorsed by, or supported by Hengbot. Sirius and Hengbot are trademarks of their respective owners. This kit was reconstructed by reverse-engineering the robot's API; it is neither supplied nor approved by the manufacturer.",
+    "version_publiable": "2.6",
+    "fichier": "SiriusStudio_v2.6.zip",
+    "taille_octets": 132146,
+    "taille_lisible": "129 Ko",
+    "sha256": "eb6fcd75c78276e5bec7cd1ac2555eb7f2de4d30b2ca6403306d480cf4dfd2a4",
+    "plateforme": "Windows (lanceurs .bat ; le pont Python est multiplateforme mais non testé ailleurs)",
+    "prerequis": "Python 3 avec « Add Python to PATH » ; robot sur le même réseau Wi-Fi ; navigateur récent (WebRTC)",
+    "connexion": "double-clic demarrer.bat -> le navigateur s'ouvre sur http://127.0.0.1:8787 -> saisir l'IP du robot dans l'interface -> Connecter",
+    "sans_robot": "demarrer_simulateur.bat puis se connecter à 127.0.0.1 (simulateur au vrai protocole)",
+    "statut": "verifie",
+    "interdiction": "NE PAS publier la v2.1 ni antérieure : elles contiennent le mot de passe root en clair (lire_limites_servos.sh) et l'IP réelle du robot dans quatre fichiers. La lignée publique commence à la v2.2.",
+    "langues": "interface bilingue français / anglais, bouton FR / EN dans la barre du haut, choix mémorisé",
+    "nouveautes_2_3": "interface bilingue FR/EN ; le bouton de posture s'appelle « Couché » (EN : Lying down) au lieu de « Au sol », pour ne plus le confondre avec le mode Sol/Bureau (EN : Ground/Desktop) qui est l'environnement du robot",
+    "nouveautes_2_5": "le pont envoie des en-têtes de cache explicites (no-store sur le HTML, immutable sur les fichiers hachés) : après une mise à jour, le navigateur ne peut plus servir l'ancienne interface tout en affichant le nouveau numéro de version.",
+    "nouveautes_2_6": "posture réelle reflétée dans le sélecteur (déduite de l'action jouée, marquée comme telle, rien d'affiché tant qu'on ne sait pas) ; barre du haut qui ne déborde plus sous 1280 px ; animation de connexion jouée avant la bascule de page, 1,8 s.",
+    "version_courante_non_publiee": "2.7",
+    "nouveautes_2_7": "nouvel onglet « Système » (vision : détection + suivi de visage et compteurs temps réel ; thermique : température batterie affichée, 4 sondes moteurs déclarées muettes, température CPU déclarée non disponible avec sa raison ; charge des 14 moteurs et coupe-circuit ; métriques système) ; l'interrupteur autonome de la barre du haut est désormais relié à la vraie route POST /api/modes/autonomous ; renommage du produit en Studio 360.",
+    "statut_2_7": "non empaquetée, non publiée — telechargement/ contient toujours SiriusStudio_v2.6.zip",
+    "reserves_2_7": {
+      "commandes_non_eprouvees": [
+        "MOTOR_SET_THERMAL_PROTECTION — nom réseau sûr (table des 59 commandes), charge utile {enabled} DÉDUITE du topic ROS /system/enable_thermal_protection, jamais confirmée sur le fil",
+        "VISION_SET_FACE_TRACKING — même statut, et le nœud face_tracker NE TOURNE PAS sur ce firmware (binaire et topics présents, nœud absent de la liste des nœuds vivants, relevé du 25/07) : commande probablement acceptée sans aucun effet observable"
+      ],
+      "detection_pas_reconnaissance": "Il s'agit de DÉTECTION de visage (présence et position dans l'image), PAS de reconnaissance faciale identitaire. Aucune identité, aucune empreinte, aucune base de visages n'existe dans l'API du robot. La classe `face` est un rectangle, rien de plus.",
+      "temperature_cpu": "Aucune température CPU sur le WebSocket 8765 ni sur le REST 8088. Seule source connue : le topic ROS /fan_breathing/cpu_temp, non ponté vers le monde WebSocket. /api/system renvoie toujours cpu: null — un trou assumé plutôt qu'un chiffre inventé.",
+      "sondes_moteurs": "Les 4 sondes de patte renvoient 0 sur ce firmware : sondes muettes, valeur transmise brute.",
+      "statut": "a_confirmer"
+    }
+  },
+  "changelog_firmware": [
+    {
+      "version": "2.5.0",
+      "canal": "beta",
+      "date": "2026-07-23",
+      "taille": "107.54 MB",
+      "notes_constructeur": "Removed behavior and emotion nodes, merged into a behavior tree driver node.",
+      "installee": true
+    },
+    {
+      "version": "2.4.9",
+      "canal": "beta",
+      "date": "2026-07-22",
+      "taille": "105.75 MB",
+      "notes_constructeur": "Optimized swipe-up wake gesture feel; fixed system time synchronization failure on boot.",
+      "installee": false
+    },
+    {
+      "version": "2.4.8",
+      "canal": "beta",
+      "date": "2026-07-16",
+      "taille": "105.76 MB",
+      "notes_constructeur": "Enhanced AI interaction; multi-language text localization; on-screen Settings replaced by controller pairing.",
+      "installee": false
+    },
+    {
+      "version": "2.4.7",
+      "canal": "beta",
+      "date": "2026-07-02",
+      "taille": "110.93 MB",
+      "notes_constructeur": "CPU usage -45%; switched to WebRTC for web video streaming; GIF emoji expressions; human skeleton detection; swipe-up screen unlock and swipe-down standby; gamepad logic.",
+      "installee": false
+    },
+    {
+      "version": "2.4.6",
+      "canal": "beta",
+      "date": "2026-06-10",
+      "taille": "87.67 MB",
+      "notes_constructeur": "Lower-machine firmware upgrade with torque overload protection; CPU usage -20%.",
+      "installee": false
+    },
+    {
+      "version": "2.4.5",
+      "canal": "beta",
+      "date": "2026-06-03",
+      "taille": "85.54 MB",
+      "notes_constructeur": "Startup shake fixed; API interface protocol updated; motion assets optimized; log system in web node management; Bluetooth interaction channel.",
+      "installee": false
+    },
+    {
+      "version": "2.4.4",
+      "canal": "beta",
+      "date": "2026-04-09",
+      "taille": "97.98 MB",
+      "notes_constructeur": "Historical full update package.",
+      "installee": false
+    },
+    {
+      "version": "2.4.3",
+      "canal": "beta",
+      "date": "2026-04-07",
+      "taille": "97.46 MB",
+      "notes_constructeur": "Historical full update package.",
+      "installee": false
+    },
+    {
+      "version": "2.4.8",
+      "canal": "release",
+      "date": "2026-07-17",
+      "taille": "105.76 MB",
+      "notes_constructeur": "Reprise des apports bêta 2.4.6 à 2.4.8. Extinction automatique après mise à jour.",
+      "installee": false
+    },
+    {
+      "version": "2.4.5",
+      "canal": "release",
+      "date": "2026-06-09",
+      "taille": "85.54 MB",
+      "notes_constructeur": "Identique à la bêta 2.4.5.",
+      "installee": false
+    },
+    {
+      "version": "2.4.3",
+      "canal": "release",
+      "date": "2026-04-07",
+      "taille": "97.46 MB",
+      "notes_constructeur": "Historical full update package.",
+      "installee": false
+    }
+  ],
+  "console_constructeur": {
+    "adresse": "http://8.163.38.44:8082/<version>/connect?robot=<IP>",
+    "statut": "verifie",
+    "outils": [
+      "Material Manager",
+      "Inner World",
+      "System Update",
+      "Node Management",
+      "Gait Debug",
+      "Group Dance",
+      "Net Debug",
+      "Behavior Tree",
+      "Timeline Editor"
+    ],
+    "note": "Hébergée par le constructeur, pas par le robot : la page est servie depuis son serveur puis ouvre un WebSocket directement vers le robot sur :8765. Rollback et redémarrage automatique disponibles dans le Centre de mise à jour.",
+    "jamais_explores": [
+      "Behavior Tree",
+      "Timeline Editor",
+      "Group Dance",
+      "Net Debug",
+      "Material Manager",
+      "Node Management"
+    ]
+  },
+  "sommeil": {
+    "etat": "emotion_state = \"sleeping\", arousal proche de 0, le robot s'accroupit",
+    "reveil_a_distance": "OUI — jouer l'action de redressement : ACTION_PLAY {file_path: /root/material/actions/stand_default_returnPosition_brief.avi, priority: 5, torque: 2047}",
+    "statut": "verifie",
+    "ce_qui_n_est_pas_pilotable": "l'état émotionnel lui-même : EMOTION_SET_STATE répond service_unavailable, EMOTION_INTERACTION refuse tous les types tentés (touch_tap, touch, pet, dog_bone)",
+    "a_mesurer": "on ignore si emotion_state quitte réellement 'sleeping' après le redressement, ou si seule la posture change : observer l'événement emotion-update avant/après",
+    "correction": "Une formulation antérieure de nos documents disait « le réveil ne semble pas pilotable à distance ». C'est faux : le bouton Debout de l'outil Studio 360 le fait. Corrigé le 26/07.",
+    "exception_mise_sous_tension": "Le tout premier réveil après la mise sous tension n'est PAS pilotable à distance : il faut un balayage physique vers le haut sur l'écran de la tête (déverrouillage d'écran, cf. notes de version 2.4.7 et 2.4.9). Ensuite, tout se pilote."
+  },
+  "posture": {
+    "commandes": {
+      "debout": "ACTION_PLAY /root/material/actions/stand_default_returnPosition_brief.avi, priorité 5, couple 2047",
+      "couche": "ACTION_PLAY de l'action choisie dans ACTION_GET_LIST (lie, lay, prone, ground, puis crouch, down, rest, sit)"
+    },
+    "statut": "verifie",
+    "preuve": "les deux animations couché / debout ont été jouées sur le robot réel le 26/07/2026 et fonctionnent",
+    "non_confirme": [
+      "que emotion_state quitte réellement 'sleeping' après le redressement",
+      "la déduction automatique de posture du helper (suivi du comportement autonome) : éprouvée sur simulateur seulement"
+    ]
+  }
+}

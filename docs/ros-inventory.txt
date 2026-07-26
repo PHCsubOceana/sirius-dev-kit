@@ -1,0 +1,488 @@
+Sirius — inventaire des capteurs
+date   : 2026-07-25T23:37:24+08:00
+hôte   : hengbot
+
+══ Environnement ROS
+  ok      /opt/ros/humble/setup.bash
+  ok      /root/sirius_ros2/install/setup.bash
+  RMW=rmw_cyclonedds_cpp  URI=file:///root/cyclonedds.xml
+  ros2    /opt/ros/humble/bin/ros2
+
+══ Nœuds actifs
+WARNING: Be aware that are nodes in the graph that share an exact name, this can have unintended side effects.
+/action_player_node
+/ai_interaction_node
+/behavior_engine_node
+/ble_control_server
+/camera_publisher_node
+/camera_publisher_node
+/character_state_node
+/core_api_node
+/core_api_node
+/face_detection_bridge
+/fan_controller_node
+/imu_onbody
+/internal_sensor_battery_onbody
+/lifecycle_manager_node
+/lvgl_gui_node
+/modbus_driver
+/motor_torque_controller_node
+/network_config_node
+/ota_update_node
+/perception_bridge_node
+/production_test_node
+/robot_led_controller_node
+/sirius_bt
+/sirius_gamepad
+/sirius_motion_control_node
+/state_sensor_tof_node
+/sync_manager_node
+/user_data_manager
+/user_interface_udp_server_node
+/wmix_audio_player_node
+/xbox_bluetooth_gamepad
+
+══ Tous les topics (avec leur type)
+/action_player/action_completed [std_msgs/msg/String]
+/action_player/current_playing_file [std_msgs/msg/String]
+/action_player/current_posture [std_msgs/msg/String]
+/ai_interaction/clear_character_history [std_msgs/msg/Empty]
+/ai_interaction/lease_gray [std_msgs/msg/String]
+/ai_interaction/reload_character [std_msgs/msg/Empty]
+/ai_interaction/reload_creds [std_msgs/msg/Empty]
+/ai_interaction/session_active [std_msgs/msg/Bool]
+/ai_interaction/state [std_msgs/msg/String]
+/ai_interaction/text_input [std_msgs/msg/String]
+/ai_interaction/trigger [std_msgs/msg/Bool]
+/ai_interaction/turn_output [std_msgs/msg/String]
+/ai_interaction/voice_trigger_enabled [std_msgs/msg/Bool]
+/ai_interaction/voice_trigger [std_msgs/msg/Bool]
+/ai/state [std_msgs/msg/String]
+/audio_frame [audio_msg/msg/AudioFrame]
+/audio_player/play [std_msgs/msg/String]
+/audio_record [audio_msg/msg/AudioFrame]
+/behavior/result [sirius_msg/msg/BehaviorResult]
+/ble_control/status [std_msgs/msg/String]
+/bluetooth_connected [std_msgs/msg/Bool]
+/bluetooth_scan_state [std_msgs/msg/Bool]
+/bluetooth_status [std_msgs/msg/String]
+/boot/wake_gesture [sirius_msg/msg/WakeGesture]
+/boot/wake_ready [std_msgs/msg/Bool]
+/bt/cmd [std_msgs/msg/String]
+/bt/found [sirius_msg/msg/BtDevice]
+/bt/pair_window_state [std_msgs/msg/String]
+/bt/status [sirius_msg/msg/BtDevice]
+/camera/image_compressed [sensor_msgs/msg/CompressedImage]
+/character/state [sirius_msg/msg/CharacterState]
+/debug/resleep [std_msgs/msg/Empty]
+/device_modbus/read_buffer_view [std_msgs/msg/UInt16MultiArray]
+/device_modbus/write_buffer_topic [sirius_msg/msg/WriteModbusBufferArray]
+/device_modbus/write_buffer_view [std_msgs/msg/UInt16MultiArray]
+/dog/awake [std_msgs/msg/Bool]
+/emotion_manager/emotion_value [emotion_manager/msg/EmotionValue]
+/emotion_manager/fatigue_status [std_msgs/msg/Float32]
+/emotion_manager/gesture_event [std_msgs/msg/String]
+/emotion_manager/toilet_desire [std_msgs/msg/Float32]
+/emotion_manager/toilet_event [std_msgs/msg/String]
+/esp32/firmware_version [std_msgs/msg/String]
+/face_detection/roi [ai_msgs/msg/Roi]
+/face_tracker/body_pose_channel1 [geometry_msgs/msg/Point]
+/face_tracker/control [std_msgs/msg/String]
+/face_tracker/head_pose_channel1 [geometry_msgs/msg/Point]
+/fan_breathing/cpu_temp [std_msgs/msg/Float32]
+/fan_breathing/enable [std_msgs/msg/Bool]
+/fan_breathing/speed [std_msgs/msg/Float32]
+/fan/duty [std_msgs/msg/Int32]
+/fan/mode [std_msgs/msg/String]
+/fan/state [std_msgs/msg/String]
+/gait_analysis/visualization [visualization_msgs/msg/MarkerArray]
+/gait_generation_trot/cmd_vel [geometry_msgs/msg/Twist]
+/gait_generation_trot/filtered_velocity [geometry_msgs/msg/Twist]
+/gait_generation_trot/motion_mode [sirius_msg/msg/MotionMode]
+/gait_generation_trot/target/back_left_foot [geometry_msgs/msg/Point]
+/gait_generation_trot/target/back_right_foot [geometry_msgs/msg/Point]
+/gait_generation_trot/target/front_left_foot [geometry_msgs/msg/Point]
+/gait_generation_trot/target/front_right_foot [geometry_msgs/msg/Point]
+/gamepad/body_position_request [geometry_msgs/msg/Point]
+/gamepad/control_active [std_msgs/msg/Bool]
+/hobot_mono2d_body_detection [ai_msgs/msg/PerceptionTargets]
+/image_raw [sensor_msgs/msg/Image]
+/internal_sensor/battery_onbody/battery_publisher/state [sensor_msgs/msg/BatteryState]
+/internal_sensor/battery_onbody/diagnostics [diagnostic_msgs/msg/DiagnosticStatus]
+/joy [sensor_msgs/msg/Joy]
+/kinematics/fk_publisher [sirius_msg/msg/SiriusPose]
+/kinematics/ik_publisher/pose_view [sirius_msg/msg/SiriusPose]
+/kinematics/ik_subscriber/body_euler_channel1 [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/body_pose [geometry_msgs/msg/Pose]
+/kinematics/ik_subscriber/body_position_channel1 [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/head_euler_follow [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/head_quaternion [geometry_msgs/msg/Quaternion]
+/kinematics/ik_subscriber/left_back_point_channel1 [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/left_back_point [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/left_front_point_channel1 [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/left_front_point [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/pose [sirius_msg/msg/SiriusPose]
+/kinematics/ik_subscriber/right_back_point_channel1 [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/right_back_point [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/right_front_point_channel1 [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/right_front_point [geometry_msgs/msg/Point]
+/kinematics/ik_subscriber/workspace_diag [std_msgs/msg/String]
+/lifecycle_manager/current_mode [std_msgs/msg/String]
+/lifecycle_manager_node/current_mode [std_msgs/msg/String]
+/lifecycle_manager_node/node_states [std_msgs/msg/String]
+/lifecycle_manager_node/system_metrics [std_msgs/msg/String]
+/lvgl_gui/lottie_play [std_msgs/msg/String]
+/lvgl_gui_node/touch_state [lvgl_ros2_gui/msg/TouchState]
+/lvgl_layer [std_msgs/msg/String]
+/mqtt/credentials [std_msgs/msg/String]
+/mqtt/status [std_msgs/msg/String]
+/network/hotspot_status [sirius_msg/msg/HotspotStatus]
+/network/info [sirius_msg/msg/NetworkInfo]
+/network/qrcode [sirius_msg/msg/QRCodeData]
+/network/status [sirius_msg/msg/NetworkStatus]
+/ota/log [std_msgs/msg/String]
+/ota/progress [std_msgs/msg/Float32]
+/ota/server_config [std_msgs/msg/String]
+/ota/status [std_msgs/msg/String]
+/parameter_events [rcl_interfaces/msg/ParameterEvent]
+/perception/event [sirius_msg/msg/PerceptionEvent]
+/robot_behavior/status [std_msgs/msg/String]
+/robot_led_controller/led_colors [std_msgs/msg/String]
+/rosout [rcl_interfaces/msg/Log]
+/scs_config/motor_mode_status [device_modbus_node/msg/MotorModeStatus]
+/state_sensor/imu_onbody/imu_publisher/diagnostic [diagnostic_msgs/msg/DiagnosticStatus]
+/state_sensor/imu_onbody/imu_publisher/imu_angle [geometry_msgs/msg/Vector3]
+/state_sensor/imu_onbody/imu_publisher/imu_data [sensor_msgs/msg/Imu]
+/state_sensor/tof/distance_array [state_sensor_tof/msg/ToFDistanceArray]
+/state_sensor/tof/heatmap [sensor_msgs/msg/Image]
+/sync_manager/execute [sync_manager_node/msg/SyncCommand]
+/system/behavior_pause [std_msgs/msg/String]
+/system/enable_random_action [std_msgs/msg/Bool]
+/system/enable_thermal_protection [std_msgs/msg/Bool]
+/system/orchestration_mode [std_msgs/msg/Bool]
+/udp_server/status [std_msgs/msg/UInt8]
+/ui_events [std_msgs/msg/String]
+/user_data_manager/language_changed [std_msgs/msg/String]
+/user_data_manager/theme_changed [std_msgs/msg/UInt8]
+/wmix_audio_player/play_sound [std_msgs/msg/String]
+
+══ → candidats DISTANCE / PROFONDEUR (ToF)
+/bluetooth_scan_state [std_msgs/msg/Bool]
+/state_sensor/tof/distance_array [state_sensor_tof/msg/ToFDistanceArray]
+/state_sensor/tof/heatmap [sensor_msgs/msg/Image]
+
+══ → candidats ATTITUDE (IMU)
+/state_sensor/imu_onbody/imu_publisher/diagnostic [diagnostic_msgs/msg/DiagnosticStatus]
+/state_sensor/imu_onbody/imu_publisher/imu_angle [geometry_msgs/msg/Vector3]
+/state_sensor/imu_onbody/imu_publisher/imu_data [sensor_msgs/msg/Imu]
+
+══ → candidats CHUTE / SÉCURITÉ
+(aucun)
+
+══ Paquets de messages maison
+· sirius_msg
+    sirius_msg/action/ExecuteIntent
+    sirius_msg/msg/NetworkStatus
+    sirius_msg/srv/SetModbusWriteBufferArray
+    sirius_msg/msg/CharacterState
+    sirius_msg/msg/WakeGesture
+    sirius_msg/srv/BtScan
+    sirius_msg/msg/QRCodeData
+    sirius_msg/srv/SetMotorTorque
+    sirius_msg/msg/RobotPlayingStatus
+    sirius_msg/srv/PauseModbusDriver
+    sirius_msg/msg/BehaviorResult
+    sirius_msg/srv/BluetoothScan
+    sirius_msg/srv/BtPair
+    sirius_msg/srv/StartNetworkConfig
+    sirius_msg/msg/NetworkInfo
+    sirius_msg/srv/NetworkConnect
+    sirius_msg/srv/SetSparkyMode
+    sirius_msg/srv/NetworkForget
+    sirius_msg/srv/LedControl
+    sirius_msg/msg/WriteModbusBufferArray
+    sirius_msg/msg/BtDevice
+    sirius_msg/msg/MotionMode
+    sirius_msg/msg/HotspotStatus
+    sirius_msg/srv/WriteScsRegister
+    sirius_msg/action/PlayMotion
+    sirius_msg/srv/HotspotControl
+    sirius_msg/msg/SiriusPose
+    sirius_msg/srv/UniversalControl
+    sirius_msg/msg/PerceptionEvent
+    sirius_msg/srv/HotspotStatus
+    sirius_msg/srv/NetworkGetSaved
+    sirius_msg/srv/ReadScsRegister
+    sirius_msg/srv/CaptureJpeg
+    sirius_msg/srv/NetworkScan
+· sirius_msgs
+    Unknown package 'sirius_msgs'
+· ai_msgs
+    ai_msgs/msg/PerceptionTargets
+    ai_msgs/msg/Point
+    ai_msgs/msg/CaptureTargets
+    ai_msgs/msg/Perf
+    ai_msgs/msg/PerceptionInfo
+    ai_msgs/msg/Roi
+    ai_msgs/msg/Attribute
+    ai_msgs/msg/Target
+    ai_msgs/msg/DBResult
+    ai_msgs/msg/Capture
+· hobot_msgs
+    Unknown package 'hobot_msgs'
+
+══ Échantillon — /bluetooth_scan_state
+(rien reçu en 6s — topic déclaré mais silencieux)
+
+══ Échantillon — /state_sensor/tof/distance_array
+header:
+  stamp:
+    sec: 1784993882
+    nanosec: 117174627
+  frame_id: tof_sensor
+distances:
+- 19
+- 26
+- 35
+- 29
+- 29
+- 25
+- 30
+- 37
+- 29
+- 52
+- 51
+- 31
+- 31
+- 33
+- 32
+- 32
+valid:
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+raw_registers:
+(rien reçu en 6s — topic déclaré mais silencieux)
+
+══ Échantillon — /state_sensor/tof/heatmap
+header:
+  stamp:
+    sec: 1784993887
+    nanosec: 686975003
+  frame_id: tof_sensor
+height: 4
+width: 4
+encoding: mono16
+is_bigendian: 0
+step: 8
+data:
+- 27
+- 0
+- 39
+- 0
+- 41
+- 0
+- 32
+- 0
+- 34
+- 0
+- 39
+- 0
+- 38
+- 0
+- 42
+- 0
+- 255
+- 7
+- 56
+- 0
+- 255
+- 7
+- 255
+- 7
+- 32
+- 0
+- 35
+- 0
+- 33
+
+══ Échantillon — /state_sensor/imu_onbody/imu_publisher/diagnostic
+level: "\0"
+name: imu
+message: IMU sensor is operating normally
+hardware_id: ''
+values: []
+---
+(rien reçu en 6s — topic déclaré mais silencieux)
+
+══ Échantillon — /state_sensor/imu_onbody/imu_publisher/imu_angle
+(rien reçu en 6s — topic déclaré mais silencieux)
+
+══ Bus I²C — le ToF est-il visible en direct ?
+  /dev/i2c-0
+  /dev/i2c-1
+  /dev/i2c-3
+  /dev/i2c-5
+· bus 0
+         0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+    00:                         -- -- -- -- -- -- -- -- 
+    10: -- -- -- -- -- UU -- -- -- -- UU -- -- -- -- -- 
+    20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    70: -- -- -- -- -- -- -- --                         
+· bus 1
+         0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+    00:                         -- -- -- -- -- -- -- -- 
+    10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    70: -- -- -- -- -- -- -- --                         
+· bus 3
+         0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+    00:                         -- -- -- -- -- -- -- -- 
+    10: 10 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    70: -- -- -- -- -- -- -- --                         
+· bus 5
+         0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+    00:                         -- -- -- -- -- -- -- -- 
+    10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- UU -- 
+    20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    30: -- -- -- -- -- -- -- -- -- -- -- 3b -- -- -- -- 
+    40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    70: -- -- -- -- -- -- -- --                         
+  Repères : 0x29 ou 0x52 = famille VL53L0X/L1X/L5CX/L8CX (ToF)
+            0x68 / 0x69  = IMU (MPU-6050, ICM-20948…)
+
+══ Périphériques I²C déclarés par le noyau
+  0-0015
+  0-001a
+  1-0038
+  1-0045
+  5-001e
+  i2c-0
+  i2c-1
+  i2c-3
+  i2c-5
+  /sys/bus/i2c/devices/0-0015/name → cst816
+  /sys/bus/i2c/devices/0-001a/name → wm8960
+  /sys/bus/i2c/devices/1-0038/name → ft5406
+  /sys/bus/i2c/devices/1-0045/name → hobot_bl_controller
+  /sys/bus/i2c/devices/5-001e/name → hpu3501
+  /sys/bus/i2c/devices/i2c-0/name → Hobot I2C adapter
+  /sys/bus/i2c/devices/i2c-1/name → Hobot I2C adapter
+  /sys/bus/i2c/devices/i2c-3/name → Hobot I2C adapter
+  /sys/bus/i2c/devices/i2c-5/name → Hobot I2C adapter
+
+══ Modules noyau liés à un capteur de distance
+  (aucun module évident)
+
+══ Périphériques iio (capteurs génériques Linux)
+  iio:device0
+
+══ Processus susceptibles de lire le ToF
+  root        3912  0.0  0.6  49888 25680 ?        Ss   22:56   0:01 /usr/bin/python3 /opt/ros/humble/bin/ros2 run state_sensor_imu_onbody imu_publisher --ros-args -r __node:=imu_onbody
+  root        3917  0.0  0.6  49888 25652 ?        Ss   22:56   0:01 /usr/bin/python3 /opt/ros/humble/bin/ros2 run state_sensor_tof state_sensor_tof_node --ros-args -r __node:=state_sensor_tof_node
+  root        3922  0.0  0.6  49888 25616 ?        Ss   22:56   0:01 /usr/bin/python3 /opt/ros/humble/bin/ros2 run behavior_engine perception_bridge_node --ros-args -r __node:=perception_bridge_node
+  root        3927  0.0  0.6  49892 25696 ?        Ss   22:56   0:01 /usr/bin/python3 /opt/ros/humble/bin/ros2 run internal_sensor_battery_onbody internal_sensor_battery_onbody --ros-args -r __node:=internal_sensor_battery_onbody
+  root        4069  0.2  0.4 547128 17880 ?        Sl   22:56   0:06 /root/sirius_ros2/install/behavior_engine/lib/behavior_engine/perception_bridge_node --ros-args -r __node:=perception_bridge_node
+  root        4070 11.7  0.4 546884 17680 ?        Sl   22:56   4:53 /root/sirius_ros2/install/state_sensor_tof/lib/state_sensor_tof/state_sensor_tof_node --ros-args -r __node:=state_sensor_tof_node
+  root        4135 13.7  0.4 547028 16720 ?        Rl   22:56   5:43 /root/sirius_ros2/install/state_sensor_imu_onbody/lib/state_sensor_imu_onbody/imu_publisher --ros-args -r __node:=imu_onbody
+  root        4165  7.9  0.4 547936 17596 ?        Sl   22:56   3:17 /root/sirius_ros2/install/internal_sensor_battery_onbody/lib/internal_sensor_battery_onbody/internal_sensor_battery_onbody --ros-args -r __node:=internal_sensor_battery_onbody
+
+══ Exécutables ROS installés (repérage par nom)
+
+action_compiler
+ai_interaction_node
+audio_recorder_node
+bake_gif.py
+behavior_engine_node
+bt_node
+camera_capture_node
+camera_publisher_node
+character_state_node
+control_node
+core_api_node
+emotion_manager_node
+face_detection_bridge
+face_tracker
+fan_controller_node
+gait_analysis_node
+gamepad_node
+hey_sirius_wake_node
+httplib
+imu_publisher
+internal_sensor_battery_onbody
+libai_interaction_node_core.a
+lifecycle_manager_node
+lvgl_gui_node
+modbus_driver
+motion_control_with_action_node
+motor_torque_controller_node
+network_config_node
+ota_update_node
+perception_bridge_node
+person_finder_node
+picoclaw_bridge_node
+production_test_node
+provisioning_node
+robot_behavior_controller_node
+robot_led_controller_node
+/root/sirius_ros2/install/action_player_node/lib/action_player_node/:
+/root/sirius_ros2/install/ai_interaction_node/lib/ai_interaction_node/:
+/root/sirius_ros2/install/behavior_engine/lib/behavior_engine/:
+/root/sirius_ros2/install/ble_provisioning_server/lib/ble_provisioning_server/:
+/root/sirius_ros2/install/ble_provisioning_server/lib/python3.10/:
+/root/sirius_ros2/install/camera_publisher_ros/lib/camera_publisher_ros/:
+/root/sirius_ros2/install/core_api_node/lib/cmake/:
+/root/sirius_ros2/install/core_api_node/lib/core_api_node/:
+/root/sirius_ros2/install/device_fan_controller/lib/device_fan_controller/:
+/root/sirius_ros2/install/device_modbus_node/lib/device_modbus_node/:
+/root/sirius_ros2/install/emotion_manager/lib/emotion_manager/:
+/root/sirius_ros2/install/face_detection_bridge/lib/face_detection_bridge/:
+/root/sirius_ros2/install/face_tracking/lib/face_tracking/:
+/root/sirius_ros2/install/gait_generation_trot/lib/gait_generation_trot/:
+/root/sirius_ros2/install/hey_sirius_wake/lib/hey_sirius_wake/:
+/root/sirius_ros2/install/internal_sensor_battery_onbody/lib/internal_sensor_battery_onbody/:
+/root/sirius_ros2/install/lifecycle_manager/lib/lifecycle_manager/:
+/root/sirius_ros2/install/lvgl_ros2_gui/lib/lvgl_ros2_gui/:
+/root/sirius_ros2/install/motor_torque_controller/lib/motor_torque_controller/:
+/root/sirius_ros2/install/network_config_ros/lib/cmake/:
+/root/sirius_ros2/install/network_config_ros/lib/network_config_ros/:
+/root/sirius_ros2/install/ota_update_node/lib/ota_update_node/:
+/root/sirius_ros2/install/person_finder/lib/person_finder/:
+
+══ Comment lire ce rapport
+
+  • Un topic de distance qui publie → déambulation faisable telle quelle.
+  • Rien sur ROS mais une puce en 0x29/0x52 sur l'I²C → le ToF existe et
+    n'est pas publié : il faut un petit nœud lecteur.
+  • Ni l'un ni l'autre → le ToF est traité dans un binaire fermé du
+    firmware. On se rabat sur la caméra.
+
+── fin de l'inventaire ──

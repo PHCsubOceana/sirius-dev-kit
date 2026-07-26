@@ -1,0 +1,211 @@
+# Studio 360 pour Sirius — mode d'emploi
+
+**Studio 360** — kit de développement *pour Hengbot Sirius, projet
+indépendant*.
+
+> **Projet indépendant d'explorations360, sans lien ni affiliation avec
+> Hengbot.** Sirius et Hengbot sont des marques de leurs propriétaires
+> respectifs. Ce kit est le fruit d'un travail de rétro-ingénierie de l'API du
+> robot : il n'est ni fourni, ni approuvé, ni soutenu par le constructeur.
+
+*L'outil s'appelait « Sirius Studio » jusqu'à la v2.6 ; renommé à la v2.7 pour
+ne plus se confondre avec l'application officielle du constructeur. Les archives
+déjà diffusées gardent leur nom de fichier.*
+
+La version s'affiche à trois endroits : dans la fenêtre noire au démarrage,
+sur l'écran de connexion, et dans la barre du haut de l'interface. Elle vient
+du fichier `VERSION.txt` — un seul endroit à changer, tout suit.
+
+---
+
+## Démarrage
+
+### Avec ton robot
+
+1. Allume le robot, vérifie qu'il est sur **le même réseau Wi-Fi** que ton PC.
+2. **Double-clique `demarrer.bat`** — le navigateur s'ouvre tout seul.
+3. **Saisis l'adresse IP du robot dans l'interface**, puis clique « Connecter ».
+   Elle est mémorisée : les fois suivantes, un clic sur l'adresse récente suffit.
+
+L'IP du robot s'affiche sur son écran, dans le menu Réseau.
+
+### Sans robot (découverte, démonstration)
+
+**Double-clique `demarrer_simulateur.bat`**, puis connecte-toi à `127.0.0.1`
+dans l'interface. Un robot simulé répond, avec des données calquées sur les
+mesures du vrai. Rien ne peut être endommagé — idéal pour montrer l'outil.
+
+> La première utilisation installe les dépendances Python (~30 s). Ensuite le
+> démarrage est immédiat. Python doit être installé — https://www.python.org/downloads/
+> en cochant **« Add Python to PATH »**.
+
+Pour tout arrêter : ferme la fenêtre noire.
+
+---
+
+## ⚠️ Le réglage à connaître : Sol ou Bureau
+
+Le robot a deux **environnements**, et c'est le piège numéro un :
+
+- **Bureau** — il bride sa démarche et ses mouvements amples pour ne pas tomber
+  d'une table. Résultat : **il bouge les pattes sans avancer**.
+- **Sol** — démarche complète, déplacements réels.
+
+Sorti d'usine il est en mode **Bureau**. Si ton robot piétine sur place, c'est
+presque toujours ça — pas la batterie, pas le réseau. Le réglage est dans
+**Dashboard → Modes & comportement → Environnement**.
+
+Autre chose utile : le robot **s'endort après un moment d'inactivité** et se
+met accroupi. Dans cet état, un ordre de marche ne donne rien. Réveille-le en
+jouant une action (par exemple « Posture debout standard ») avant de le piloter.
+
+Sur le robot, ce réglage se change aussi par un **swipe vertical sur l'écran de
+la tête**. Le bouton **Sol / Bureau** de l'interface fait la même chose à
+distance ; le bouton **Redresser** joue le rôle du réveil.
+
+---
+
+## L'interface
+
+**Dashboard** — batterie, températures moteurs, posture, émotion, nœuds ROS,
+vue caméra, pilotage rapide, actions favorites.
+
+**Pilotage** — deux joysticks comme sur la manette Xbox : le gauche pour la
+translation, le droit pour l'orientation. Souris et tactile. Au clavier :
+`W`/`S` avancer-reculer, `A`/`D` latéral, `Q`/`E` rotation, **`Espace` = arrêt**.
+En dessous : télémétrie en direct et journal des appels d'API.
+
+Le sélecteur **Posture** couche et relève le robot. « Debout » rejoue exactement
+l'action du bouton Reset — c'est la voie sûre, capturée sur l'interface
+officielle. « Au sol » cherche l'action correspondante dans la bibliothèque de
+ton robot et t'affiche le nom retenu : vérifie du regard que c'est bien la
+bonne la première fois.
+
+**Tête** — un troisième joystick, à part, sur la page Pilotage. Il est
+*collant* : la tête garde la direction qu'on lui donne quand on lâche le
+pommeau, ce qui est le comportement utile pour regarder autour de soi avec la
+caméra. Le bouton **Recentrer** la ramène au neutre. L'amplitude est bridée à
+±26° en lacet et ±20° en tangage, sous le domaine déclaré du robot. Cette
+commande est la seule du kit qui n'ait pas encore été confirmée sur le
+matériel : si la tête ne bouge pas, bascule le sélecteur sur **Corps** et
+regarde la réponse du robot dans le journal d'API — elle nous dira lequel des
+deux noms de champ est le bon.
+
+**Vue caméra** (sur le Dashboard) — le flux vidéo arrive en direct du robot,
+en pair-à-pair. Par-dessus l'image, les **boîtes de détection** et les **points
+du squelette** sont dessinés en temps réel. Juste en dessous, le panneau
+**Suivi en temps réel** liste ce que la vision sait reconnaître avec, en face
+de chaque nom, le nombre d'objets actuellement suivis : `Corps (1)`,
+`Main (0)`… Une classe inconnue qui apparaîtrait s'ajoute d'elle-même à la
+liste — c'est ainsi qu'on découvrira ce que le modèle embarqué sait vraiment
+détecter.
+
+**Actions** — la bibliothèque du robot, filtrable, avec traduction française
+des noms (le robot les stocke en chinois).
+
+**Système** *(nouveau en v2.7)* — la page de diagnostic, et celle qui dit le
+plus franchement ce que le robot **ne mesure pas**.
+
+- *Vision* — les interrupteurs de détection et de suivi de visage, et les
+  compteurs de la perception en temps réel : `face`, `body`, `head`, la cadence
+  des trames et l'âge de la dernière.
+- *Thermique* — la **température de la batterie** est la seule que le robot
+  publie vraiment, et elle est affichée. Les **quatre sondes de patte sont
+  muettes** sur ce firmware : elles renvoient 0, c'est écrit à l'écran plutôt
+  que maquillé. La **température CPU n'est pas disponible**, et l'interface dit
+  pourquoi : elle n'existe ni sur le WebSocket ni sur l'API REST du robot ; sa
+  seule source connue est un topic ROS interne (`/fan_breathing/cpu_temp`) que
+  rien ne relaie vers le pont web. Un tiret honnête vaut mieux qu'un chiffre
+  inventé.
+- *Moteurs* — la charge des 14 moteurs et l'état du coupe-circuit.
+- *Métriques* — processeur, disque, nœuds ROS actifs, réseau, fraîcheur du lien.
+
+⏳ **Deux interrupteurs de cette page ne sont pas éprouvés**, et l'interface le
+signale : la **protection thermique des moteurs**
+(`MOTOR_SET_THERMAL_PROTECTION`) et le **suivi de visage**
+(`VISION_SET_FACE_TRACKING`). Leur nom réseau est sûr, leur effet ne l'est pas —
+et pour le second, le nœud `face_tracker` **ne tourne pas** sur ce firmware : la
+commande sera sans doute acceptée sans que rien ne bouge. Si tu constates le
+contraire sur ta machine, dis-le-nous : c'est exactement ce qu'on cherche à
+savoir.
+
+📌 Il s'agit de **détection** de visage — savoir qu'un visage est là et où il
+est. **Pas de reconnaissance faciale identitaire** : le robot ne sait pas *qui*
+est devant lui, et rien dans son API ne le permet.
+
+**Modes & comportement** (sur le Dashboard) — l'environnement Sol/Bureau, le
+mode autonome, les actions aléatoires, l'interaction IA et le déclenchement
+vocal. Le **mode autonome** mérite attention : quand il est actif, le robot
+décide seul et peut annuler tes commandes.
+
+Un bouton **Arrêt** reste accessible en permanence dans la barre du haut, à
+côté de l'interrupteur **autonome / manuel**. Depuis la v2.7, cet interrupteur
+agit pour de bon sur le robot — il envoyait auparavant sa bascule à l'affichage
+seulement.
+
+---
+
+## Sécurité
+
+Trois protections se cumulent.
+
+**Le robot** écrête lui-même les angles articulaires et son espace de travail
+(`joint_clamp_enabled`, `ws_clamp_enabled`) et détecte les sauts d'angle.
+
+**Le helper** refuse les consignes hors domaine *avant* de les envoyer. Limites
+relevées sur le robot : avant 0,24 m/s, arrière 0,16 m/s, latéral ±0,20 m/s,
+rotation ±1,2 rad/s, pitch et roll ±30°.
+
+**Le coupe-circuit** surveille la charge des 14 moteurs. Au-delà de
+**850 ‰ maintenus 0,8 s**, il arrête le robot et verrouille les commandes
+jusqu'à réarmement depuis l'interface. Seuil calibré sur mesures réelles : le
+fonctionnement normal plafonne à ~540 ‰ quelle que soit l'allure, un moteur en
+butée dépasse 950 ‰ de façon *soutenue*.
+
+L'arrêt est **vérifié** : le helper répète l'ordre jusqu'à ce que la télémétrie
+confirme la vitesse nulle, et alerte si ce n'est pas le cas.
+
+### Bonnes pratiques
+
+Robot **au sol**, espace dégagé, gardé à l'œil lors des premiers essais.
+Désactive le **mode autonome** pendant tes tests (interface officielle du robot
+→ Inner World) : sinon il reprend la main et annule tes commandes. Évite les
+sessions très longues en continu, les moteurs chauffent.
+
+---
+
+## Contenu du dossier
+
+```
+VERSION.txt                  le numéro de version du kit
+demarrer.bat                 lancement avec le robot
+demarrer_simulateur.bat      lancement sans robot
+sirius_helper.py             le pont robot ↔ navigateur (+ sécurité)
+mock_robot.py                le robot simulé
+ui/                          l'interface web
+lire_limites_servos.sh       relevé des limites (avancé, SSH)
+ecran_tete.sh                diagnostic de l'écran de la tête (avancé, SSH)
+```
+
+---
+
+## En cas de souci
+
+**« Impossible de joindre le robot »** — vérifie l'IP, et que robot et PC sont
+sur le même réseau.
+
+**Le navigateur ne s'ouvre pas** — va sur http://127.0.0.1:8787
+
+**« Python introuvable »** — installe Python en cochant « Add Python to PATH ».
+
+**Il bouge les pattes mais n'avance pas** — deux causes possibles :
+il est en mode **Bureau** (bascule sur **Sol** dans Modes & comportement),
+ou la vitesse demandée est trop faible. Monte le curseur de vitesse : à
+0,24 m/s le robot marche à pleine amplitude.
+
+**Il ne réagit pas du tout** — soit il dort (joue une action pour le réveiller),
+soit le **mode autonome** est actif et annule tes commandes (coupe-le dans
+Modes & comportement).
+
+**Voir ce qui se passe** — l'API du helper est documentée et testable sur
+http://127.0.0.1:8787/docs

@@ -1,0 +1,58 @@
+Studio 360 pour Sirius — kit de développement indépendant
+Copyright 2026 Philippe Carrez — explorations360
+
+Ce produit inclut des logiciels développés par Philippe Carrez (explorations360),
+distribués sous licence Apache, version 2.0. Le texte complet de la licence est
+dans le fichier LICENSE, à la racine de ce dépôt.
+
+--------------------------------------------------------------------------------
+INDÉPENDANCE VIS-À-VIS DE HENGBOT
+--------------------------------------------------------------------------------
+
+« Hengbot » et « Sirius » sont des marques de leurs détenteurs respectifs. Ce
+projet n'est ni produit, ni approuvé, ni soutenu, ni affilié de quelque manière
+que ce soit par Hengbot. Ce n'est PAS l'application officielle du robot :
+l'application officielle est celle publiée par le constructeur.
+
+Conformément à la section 6 de la licence Apache 2.0, celle-ci ne concède aucun
+droit d'usage sur ces marques. Elles ne sont citées ici que pour désigner le
+matériel avec lequel cet outil communique, ce qu'aucun autre mot ne permettrait
+de faire aussi clairement.
+
+--------------------------------------------------------------------------------
+CE QUE COUVRE — ET NE COUVRE PAS — CETTE LICENCE
+--------------------------------------------------------------------------------
+
+Elle couvre le travail original contenu dans ce dépôt : le code du helper local
+et de son interface web, le simulateur, les scripts de mesure, et la
+documentation issue des observations menées sur le robot.
+
+Elle ne couvre PAS le micrologiciel du robot, ses composants logiciels, ses
+ressources, ni son protocole en tant qu'œuvre du constructeur. Rien dans ce
+dépôt n'en reproduit le code.
+
+La documentation du protocole publiée ici a été établie par OBSERVATION, sur un
+exemplaire acquis régulièrement, à seule fin d'interopérabilité :
+
+  - capture du trafic réseau entre l'application officielle et le robot ;
+  - inventaire des nœuds, topics et services ROS 2 exposés par la machine ;
+  - lecture des fichiers présents sur le robot, dont beaucoup sont livrés en
+    Python, donc déjà sous forme lisible ;
+  - relevé des chaînes de caractères lisibles dans les exécutables, pour
+    retrouver le nom des gestionnaires internes ;
+  - envoi de requêtes de test et observation des réponses.
+
+Aucune décompilation ni aucun désassemblage n'a été pratiqué : le code compilé
+du constructeur n'a été ni traduit, ni reconstitué, ni republié sous quelque
+forme que ce soit.
+
+--------------------------------------------------------------------------------
+AVERTISSEMENT DE SÉCURITÉ
+--------------------------------------------------------------------------------
+
+Cet outil commande un robot physique doté de quatorze servomoteurs, capable de
+mouvements brusques et de chutes. Il est fourni « EN L'ÉTAT », sans aucune
+garantie, comme le stipulent les sections 7 et 8 de la licence. L'usage se fait
+sous la seule responsabilité de l'utilisateur : dégager l'espace autour du
+robot, garder l'arrêt d'urgence à portée, et ne jamais l'utiliser au bord d'une
+surface surélevée.

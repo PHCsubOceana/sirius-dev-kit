@@ -1,0 +1,13 @@
+# Fins de ligne : le dépôt stocke tout en LF.
+# Les documents sont écrits sous Linux, le dépôt est cloné sous Windows :
+# sans cette règle, git réécrit les fichiers en CRLF au premier passage et un
+# diff ultérieur affiche « toutes les lignes modifiées » alors que rien n'a bougé.
+* text=auto eol=lf
+
+# Fichiers binaires : ne jamais toucher aux fins de ligne.
+*.png binary
+*.zip binary
+*.svg text eol=lf
+
+# Les lanceurs Windows ont besoin de CRLF pour être lus correctement par cmd.exe.
+*.bat text eol=crlf

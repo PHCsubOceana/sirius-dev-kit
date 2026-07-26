@@ -1,0 +1,17 @@
+# Rien de personnel ne doit entrer dans ce dépôt.
+# Voir SECURITE.md avant tout commit.
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# Captures et relevés bruts pouvant contenir une IP ou un SSID
+*_prive.*
+journal.txt
+rapport_*.txt
+!docs/ros-inventory.txt
