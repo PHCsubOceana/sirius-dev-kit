@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Déambulation libre — Studio 360</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+  /* Jetons repris de Studio 360 : la page doit se sentir chez elle. */
+  :root {
+    color-scheme: dark;
+    --plane:#0b0d10; --surface-1:#141619; --surface-2:#1c2026; --surface-3:#232830;
+    --text-primary:#fff; --text-secondary:#b4bcc8; --text-muted:#7d8794;
+    --border:#ffffff17; --border-strong:#ffffff29; --grid:#232830;
+    --accent:#22d3ee; --accent-fill:#18a5c4; --accent-soft:#22d3ee1f;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    /* Rampe séquentielle « distance », validée sur cette surface :
+       proche = clair (saillant), loin = sombre (s'efface vers le fond). */
+    --d1:#cbf1f8; --d2:#9adff0; --d3:#63cbe4; --d4:#2fb3d1; --d5:#0e8ba8; --d6:#0e6a80;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --plane:#f2f4f6; --surface-1:#fcfcfb; --surface-2:#f1f2f4; --surface-3:#e7e9ec;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#6b7280;
+    --border:#0b0b0b1c; --border-strong:#0b0b0b33; --grid:#e6e7ea;
+    --accent:#0891b2; --accent-fill:#0891b2; --accent-soft:#0891b21a;
+    /* En mode clair la rampe s'inverse : proche = sombre, loin = clair. */
+    --d1:#083f4d; --d2:#0b6a80; --d3:#0e8ba8; --d4:#199fbe; --d5:#4ec2de; --d6:#86d7ec;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--plane); color:var(--text-primary);
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  header {
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:14px 18px; background:var(--surface-1); border-bottom:1px solid var(--border);
+  }
+  .logo { width:34px;height:34px;border-radius:9px;background:var(--accent-soft);
+          display:grid;place-items:center;color:var(--accent);flex:none; }
+  h1 { font-size:17px; margin:0; font-weight:650; }
+  .sub { color:var(--text-muted); font-size:12px; }
+  .spacer { flex:1 1 auto; }
+  .chip { display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+          background:var(--surface-2);border:1px solid var(--border);font-size:13px;
+          color:var(--text-secondary); }
+  .dot { width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex:none; }
+  main { padding:16px; max-width:1180px; margin:0 auto; }
+  .banner {
+    display:flex;gap:11px;align-items:flex-start;padding:12px 14px;border-radius:11px;
+    background:color-mix(in srgb, var(--warning) 12%, var(--surface-1));
+    border:1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+    margin-bottom:16px; font-size:13.5px; color:var(--text-secondary);
+  }
+  .banner b { color:var(--text-primary); }
+  .banner .ico { color:var(--warning); flex:none; font-size:15px; line-height:1.4; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  @media (max-width:900px){ .cols{ grid-template-columns:1fr; } }
+  .card { background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:15px; }
+  .card h2 { font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+             color:var(--text-muted);margin:0 0 12px;font-weight:600; }
+  /* — commandes — */
+  .cmds { display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px; }
+  button { font:inherit;font-weight:600;border-radius:10px;cursor:pointer;
+           padding:11px 20px;border:1px solid var(--border-strong);
+           background:var(--surface-2);color:var(--text-primary);min-height:44px; }
+  button:hover:not(:disabled){ background:var(--surface-3); }
+  button:disabled{ opacity:.45;cursor:not-allowed; }
+  #go { background:var(--accent-fill);border-color:transparent;color:#04161b; }
+  #stop { background:var(--critical);border-color:transparent;color:#fff;
+          padding:11px 26px;font-size:16px; }
+  .slider { display:flex;align-items:center;gap:10px;flex:1 1 230px;min-width:200px; }
+  .slider input { flex:1; accent-color:var(--accent); min-height:34px; }
+  .slider label { font-size:13px;color:var(--text-secondary);white-space:nowrap; }
+  /* — vidéo — */
+  .videowrap { position:relative;background:#000;border-radius:10px;overflow:hidden;
+               aspect-ratio:16/9;display:grid;place-items:center; }
+  .videowrap video { width:100%;height:100%;object-fit:cover;display:block; }
+  .vidmsg { position:absolute;color:var(--text-muted);font-size:13px;text-align:center;padding:16px; }
+  /* — grille ToF — */
+  .grid4 { display:grid;grid-template-columns:repeat(4,1fr);gap:2px;  /* 2px : le fond fait le séparateur */
+           background:transparent; }
+  .cell { position:relative;aspect-ratio:1/1;border-radius:4px;display:grid;
+          place-items:center;font-variant-numeric:tabular-nums;font-size:15px;
+          font-weight:600;color:#04161b;outline:none; }
+  :root[data-theme="light"] .cell { color:#fff; }
+  .cell.far { color:var(--text-primary); }
+  .cell .z { position:absolute;top:3px;left:5px;font-size:9px;font-weight:600;opacity:.55; }
+  .cell.inf { background:var(--surface-3);color:var(--text-muted); }
+  .cell.obst { box-shadow:inset 0 0 0 2px var(--warning); }
+  .cell.vide { box-shadow:inset 0 0 0 2px var(--critical); }
+  .cell .flag { position:absolute;bottom:2px;right:4px;font-size:10px;font-weight:700; }
+  .cell.obst .flag { color:var(--warning); }
+  .cell.vide .flag { color:var(--critical); }
+  .rowlabel { font-size:10.5px;color:var(--text-muted);margin:9px 0 3px; }
+  .legend { display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11.5px;
+            color:var(--text-muted);flex-wrap:wrap; }
+  .ramp { display:flex;gap:2px; }
+  .ramp i { width:19px;height:9px;border-radius:2px;display:block; }
+  .statuskey { display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:11.5px; }
+  .statuskey span { display:inline-flex;align-items:center;gap:5px;color:var(--text-secondary); }
+  .sq { width:11px;height:11px;border-radius:3px;flex:none; }
+  /* — décision + tuiles — */
+  .hero { display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px; }
+  .hero .etat { font-size:27px;font-weight:680;letter-spacing:-.01em; }
+  .motif { color:var(--text-secondary);font-size:13.5px;margin-bottom:14px;min-height:20px; }
+  .tiles { display:grid;grid-template-columns:repeat(auto-fit,minmax(136px,1fr));gap:9px; }
+  .tile { background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:10px 11px; }
+  .tile .k { font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em; }
+  .tile .v { font-size:18px;font-weight:640;margin-top:3px;font-variant-numeric:tabular-nums; }
+  .tile .u { font-size:11.5px;color:var(--text-muted);font-weight:400; }
+  table.tv { width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;
+             font-variant-numeric:tabular-nums; }
+  table.tv th,table.tv td { text-align:right;padding:3px 6px;border-bottom:1px solid var(--border); }
+  table.tv th:first-child,table.tv td:first-child { text-align:left; }
+  table.tv th { color:var(--text-muted);font-weight:600; }
+  details { margin-top:12px; }
+  summary { cursor:pointer;color:var(--text-muted);font-size:12px; }
+  #tip { position:fixed;pointer-events:none;z-index:50;background:var(--surface-3);
+         color:var(--text-primary);border:1px solid var(--border-strong);border-radius:8px;
+         padding:8px 10px;font-size:12px;line-height:1.45;opacity:0;transition:opacity .1s;
+         max-width:240px;box-shadow:0 8px 24px #0006; }
+  footer { text-align:center;color:var(--text-muted);font-size:11.5px;padding:22px 16px 30px; }
+  /* Encastrée dans l'onglet de Studio 360 : l'outil porte déjà l'en-tête,
+     la barre d'onglets et la mention d'indépendance. */
+  body.embed { background:transparent; }
+  body.embed > header, body.embed footer { display:none; }
+  body.embed main { padding:0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">◎</div>
+  <div>
+    <h1>Déambulation libre</h1>
+    <div class="sub">Studio 360 pour Sirius — projet indépendant</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="chip"><i class="dot" id="dot-link"></i><span id="lbl-link">liaison…</span></span>
+  <span class="chip" id="chip-ver">—</span>
+  <button id="theme" title="Thème" style="padding:8px 12px;min-height:38px">◐</button>
+</header>
+
+<main>
+  <div class="banner">
+    <span class="ico">⚠</span>
+    <div>
+      <b>Au sol, espace dégagé, loin de tout bord ou escalier.</b>
+      Le robot évite les obstacles et surveille le vide, mais la détection de vide
+      <b>n'a pas encore été éprouvée au bord d'une vraie table</b> : ne le laisse pas
+      circuler près d'un dénivelé. Garde une main à portée — le bouton
+      <b>Arrêter</b> coupe la marche et remet les consignes à zéro.
+    </div>
+  </div>
+
+  <div class="cmds">
+    <button id="go">Démarrer</button>
+    <button id="stop">Arrêter</button>
+    <div class="slider">
+      <label for="sp">Vitesse</label>
+      <input type="range" id="sp" min="0.10" max="0.80" step="0.05" value="0.45">
+      <label id="spval" style="min-width:38px;text-align:right">0.45</label>
+    </div>
+  </div>
+
+  <div class="cols">
+    <section class="card">
+      <h2>Ce qu'il voit</h2>
+      <div class="videowrap">
+        <video id="vid" autoplay playsinline muted></video>
+        <div class="vidmsg" id="vidmsg">Connexion au flux vidéo…</div>
+      </div>
+      <div class="hero" style="margin-top:15px">
+        <span class="etat" id="etat">—</span>
+        <span class="chip" id="chip-marche">à l'arrêt</span>
+      </div>
+      <div class="motif" id="motif">En attente du service de déambulation…</div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Obstacle</div>
+          <div class="v" id="t-obst">—<span class="u"> mm</span></div></div>
+        <div class="tile"><div class="k">Consigne</div>
+          <div class="v" id="t-vx">—</div></div>
+        <div class="tile"><div class="k">Mesuré</div>
+          <div class="v" id="t-mes">—</div></div>
+        <div class="tile"><div class="k">Batterie</div>
+          <div class="v" id="t-bat">—<span class="u"> %</span></div></div>
+        <div class="tile"><div class="k">Fraîcheur ToF</div>
+          <div class="v" id="t-fr">—<span class="u"> s</span></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Champ du capteur — 16 distances, en millimètres</h2>
+      <div class="rowlabel">haut du champ — l'horizon, tout obstacle vertical</div>
+      <div class="grid4" id="grid"></div>
+      <div class="rowlabel">bas du champ — le sol devant les pattes</div>
+
+      <div class="legend">
+        <span>proche</span>
+        <span class="ramp">
+          <i style="background:var(--d1)"></i><i style="background:var(--d2)"></i>
+          <i style="background:var(--d3)"></i><i style="background:var(--d4)"></i>
+          <i style="background:var(--d5)"></i><i style="background:var(--d6)"></i>
+        </span>
+        <span>loin</span>
+        <span style="margin-left:4px">· ∞ = aucune cible (2047)</span>
+      </div>
+      <div class="statuskey">
+        <span><i class="sq" style="box-shadow:inset 0 0 0 2px var(--warning)"></i> ⬤ obstacle</span>
+        <span><i class="sq" style="box-shadow:inset 0 0 0 2px var(--critical)"></i> ▼ vide (sol perdu)</span>
+      </div>
+
+      <details>
+        <summary>Voir les valeurs en tableau</summary>
+        <table class="tv" id="tv">
+          <thead><tr><th>Zone</th><th>Distance</th><th>Fond appris</th><th>État</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
+    </section>
+  </div>
+
+  <footer>
+    <b>Studio 360 pour Sirius</b> est un projet indépendant d'explorations360, sans lien
+    ni affiliation avec Hengbot. Sirius et Hengbot sont des marques de leurs propriétaires
+    respectifs. Ce kit est le fruit d'un travail de rétro-ingénierie de l'API du robot :
+    il n'est ni fourni, ni approuvé, ni soutenu par le constructeur.
+  </footer>
+</main>
+
+<div id="tip" role="tooltip"></div>
+
+<script>
+"use strict";
+const API = "";                      // le helper sert cette page : chemins relatifs
+const $ = (s) => document.querySelector(s);
+const RAMP = ["--d1","--d2","--d3","--d4","--d5","--d6"];
+const HORS_PORTEE = 2047;
+// L'ordre d'affichage : la zone 12 est en haut à gauche, la 0 en bas à gauche.
+const ORDRE = [12,13,14,15, 8,9,10,11, 4,5,6,7, 0,1,2,3];
+
+/* ── encastrement ─────────────────────────────────────────────────────────
+   Servie seule, la page porte son en-tête et son pied. Ouverte dans l'onglet
+   « Déambulation » de Studio 360, elle est dans un cadre : l'outil fournit
+   déjà l'en-tête, la barre d'onglets et la mention d'indépendance. On les
+   masque pour ne pas les doubler — mais JAMAIS l'avertissement de sécurité. */
+const ENCASTREE = window.self !== window.top;
+if (ENCASTREE) document.body.classList.add("embed");
+
+/* ── thème ────────────────────────────────────────────────────────────────
+   Même clé que Studio 360 (`sirius.theme`) : le thème choisi dans l'outil
+   s'applique ici sans réglage séparé. La valeur « auto » suit le système. */
+(function theme(){
+  const k = "sirius.theme";
+  const resous = (v) => (v === "auto" || v === "system")
+    ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+    : v;
+  const applique = () => {
+    let v = null;
+    try { v = new URLSearchParams(location.search).get("theme")
+              || localStorage.getItem(k); } catch(e) {}
+    const t = resous(v);
+    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  };
+  applique();
+  // suit le réglage de l'outil (autre onglet / cadre parent) et du système
+  addEventListener("storage", (e) => { if (e.key === k) applique(); });
+  matchMedia("(prefers-color-scheme: light)").addEventListener("change", applique);
+  setInterval(applique, 1500);
+  $("#theme").onclick = () => {
+    const el = document.documentElement;
+    const t = el.dataset.theme === "light" ? "dark" : "light";
+    el.dataset.theme = t;
+    try { localStorage.setItem(k, t); } catch(e) {}
+  };
+})();
+
+/* ── grille ───────────────────────────────────────────────────────────── */
+const cells = {};
+(function bati(){
+  const g = $("#grid");
+  for (const i of ORDRE) {
+    const d = document.createElement("div");
+    d.className = "cell";
+    d.tabIndex = 0;
+    d.innerHTML = `<span class="z">${i}</span><span class="val">—</span><span class="flag"></span>`;
+    d.addEventListener("mousemove", (e)=>montreTip(e, i));
+    d.addEventListener("mouseleave", cacheTip);
+    d.addEventListener("focus", (e)=>montreTip(e, i, true));
+    d.addEventListener("blur", cacheTip);
+    g.appendChild(d);
+    cells[i] = d;
+  }
+})();
+
+// Distance → pas de la rampe. Bornes 120–800 mm : au-delà, tout se vaut.
+function pas(mm){
+  if (mm == null) return null;
+  const t = Math.max(0, Math.min(1, (mm - 120) / (800 - 120)));
+  return RAMP[Math.min(RAMP.length-1, Math.floor(t * RAMP.length))];
+}
+
+let dernier = null;
+
+function rendu(s){
+  dernier = s;
+  const grille = s.grille || [];
+  const env = s.enveloppe || {};
+  const obst = new Set(s.zones_obstacle || []);
+  const vide = new Set(s.zones_vide || []);
+
+  for (const i of ORDRE) {
+    const c = cells[i], mm = grille[i];
+    const val = c.querySelector(".val"), flag = c.querySelector(".flag");
+    c.className = "cell";
+    if (mm == null) { c.classList.add("inf"); val.textContent = "—"; c.style.background=""; }
+    else if (mm >= HORS_PORTEE) { c.classList.add("inf"); val.textContent = "∞"; c.style.background=""; }
+    else {
+      const p = pas(mm);
+      c.style.background = `var(${p})`;
+      // sur les pas sombres de la rampe, l'encre claire redevient lisible
+      if (p === "--d5" || p === "--d6") c.classList.add("far");
+      val.textContent = mm;
+    }
+    // Statut : jamais la couleur seule — un anneau ET un signe.
+    flag.textContent = "";
+    if (vide.has(i)) { c.classList.add("vide"); flag.textContent = "▼"; }
+    else if (obst.has(i)) { c.classList.add("obst"); flag.textContent = "⬤"; }
+  }
+
+  // décision
+  const etat = s.etat || "—";
+  const marche = !!s.en_marche;
+  // Sans cette nuance, « avance » ferait croire que le robot bouge alors qu'il
+  // est à l'arrêt : hors marche, le nœud DÉCIDE sans publier de consigne.
+  $("#etat").textContent = etat;
+  $("#etat").style.color = marche ? "" : "var(--text-secondary)";
+  $("#motif").textContent = (marche ? "" : "Il ne bouge pas — ce qu'il ferait : ")
+                          + (s.motif || "");
+  $("#chip-marche").textContent = marche
+    ? (s.sol_appris ? "en marche" : "apprentissage du sol…")
+    : "à l'arrêt — observation";
+  $("#go").disabled = marche;
+  $("#chip-ver").textContent = "v" + (s.version || "").split("—")[0].trim();
+
+  // tuiles
+  const d = s.distance_obstacle;
+  $("#t-obst").innerHTML = (d == null ? "—" : d) + '<span class="u"> mm</span>';
+  $("#t-vx").innerHTML = fmt(s.vx) + '<span class="u"> · ω ' + fmt(s.wz) + "</span>";
+  $("#t-mes").textContent = s.mesure ? fmt(s.mesure.vx) : "—";
+  $("#t-bat").innerHTML = (s.batterie == null ? "—" : Math.round(s.batterie*100)) + '<span class="u"> %</span>';
+  $("#t-fr").innerHTML = (s.fraicheur == null ? "—" : s.fraicheur.toFixed(2)) + '<span class="u"> s</span>';
+
+  if (typeof s.vitesse === "number" && document.activeElement !== $("#sp")) {
+    $("#sp").value = s.vitesse; $("#spval").textContent = s.vitesse.toFixed(2);
+  }
+
+  // tableau (l'alternative non colorée)
+  const tb = $("#tv tbody");
+  tb.innerHTML = ORDRE.map(i => {
+    const mm = grille[i], e = env[String(i)];
+    const st = vide.has(i) ? "vide" : obst.has(i) ? "obstacle" : "—";
+    return `<tr><td>${i}</td><td>${mm == null ? "—" : (mm >= HORS_PORTEE ? "∞" : mm)}</td>`
+         + `<td>${e ? e[0]+"–"+e[1] : "—"}</td><td>${st}</td></tr>`;
+  }).join("");
+
+  lien(true, s.geometrie_douteuse ? "géométrie douteuse" : "service en ligne");
+}
+
+const fmt = (v) => (typeof v === "number" ? (v >= 0 ? "+" : "") + v.toFixed(2) : "—");
+
+// La bande de distances où le robot voit sa propre mâchoire (relevé du 25/07).
+function masqueBande(mm){
+  const b = (dernier && dernier.masque_bande) || null;
+  return !!b && mm >= b[0] && mm <= b[1];
+}
+
+function lien(ok, txt){
+  $("#dot-link").style.background = ok ? "var(--good)" : "var(--critical)";
+  $("#lbl-link").textContent = txt;
+}
+
+/* ── infobulle ────────────────────────────────────────────────────────── */
+function montreTip(e, i, clavier){
+  if (!dernier) return;
+  const mm = (dernier.grille||[])[i];
+  const env = (dernier.enveloppe||{})[String(i)];
+  const vide = (dernier.zones_vide||[]).includes(i);
+  const obst = (dernier.zones_obstacle||[]).includes(i);
+  const elig = (dernier.eligibles_vide||[]).includes(i);
+  const t = $("#tip");
+  t.innerHTML = `<b>Zone ${i}</b> — ${mm==null?"pas de mesure":(mm>=HORS_PORTEE?"aucune cible (∞)":mm+" mm")}`
+    + `<br>fond appris : ${env ? env[0]+"–"+env[1]+" mm" : "—"}`
+    + `<br>${vide ? "▼ <b>vide</b> — le sol a disparu" : obst ? "⬤ <b>obstacle</b>" : "rien à signaler"}`
+    + (elig ? "<br><span style='opacity:.7'>admise à déclarer un vide</span>" : "")
+    + (mm != null && mm < HORS_PORTEE && masqueBande(mm)
+        ? "<br><span style='opacity:.7'>dans la bande du masque : à cette distance,"
+          + " c'est souvent la mâchoire du robot</span>" : "");
+  const r = clavier ? e.target.getBoundingClientRect() : null;
+  const x = clavier ? r.left : e.clientX, y = clavier ? r.top : e.clientY;
+  t.style.opacity = 1;
+  t.style.left = Math.min(x + 14, innerWidth - t.offsetWidth - 8) + "px";
+  t.style.top  = Math.max(8, y - t.offsetHeight - 12) + "px";
+}
+// Déclaration de fonction (hissée) : la grille est bâtie plus haut et s'y réfère.
+function cacheTip(){ $("#tip").style.opacity = 0; }
+
+/* ── service ──────────────────────────────────────────────────────────── */
+async function tic(){
+  try {
+    const r = await fetch(API + "/api/deambulation/etat", {cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    rendu(await r.json());
+  } catch (err) {
+    lien(false, "service injoignable");
+    $("#motif").innerHTML = "L'évitement tourne <b>à bord du robot</b> et n'y est pas "
+      + "encore déposé. Une fois : <code>scp deambulation.py root@&lt;IP&gt;:/root/</code> "
+      + "puis <code>python3 /root/deambulation.py --service</code>. "
+      + "Le fichier est dans ce kit, et le mode d'emploi dans LISEZMOI.md.";
+  }
+}
+setInterval(tic, 200);
+tic();
+
+async function envoie(chemin){
+  try {
+    const r = await fetch(API + "/api/deambulation/" + chemin, {method:"POST"});
+    if (r.ok) rendu(await r.json());
+  } catch (e) { lien(false, "commande refusée"); }
+}
+$("#go").onclick   = () => envoie("demarrer");
+$("#stop").onclick = () => envoie("arreter");
+$("#sp").oninput   = (e) => { $("#spval").textContent = (+e.target.value).toFixed(2); };
+$("#sp").onchange  = (e) => envoie("vitesse?v=" + encodeURIComponent(e.target.value));
+
+// Sécurité clavier : Échap et Espace arrêtent.
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape" || e.code === "Space") { e.preventDefault(); envoie("arreter"); }
+});
+
+/* ── vidéo (WebRTC, en direct du robot) ───────────────────────────────── */
+(async function video(){
+  let ip = null;
+  try {
+    const r = await fetch(API + "/api/status", {cache:"no-store"});
+    if (r.ok) ip = (await r.json()).robot_ip;
+  } catch (e) {}
+  const msg = $("#vidmsg");
+  if (!ip) { msg.textContent = "Robot non connecté — connecte-le d'abord dans Studio 360."; return; }
+
+  const pc = new RTCPeerConnection({iceServers: []});
+  const ws = new WebSocket(`ws://${ip}:8766`);
+  let clientId = null;
+  const enAttente = [];
+  const nettoie = (c) => (c.startsWith("a=") ? c.slice(2) : c);
+
+  pc.addTransceiver("video", {direction: "recvonly"});
+  pc.ontrack = (e) => {
+    $("#vid").srcObject = e.streams[0] || new MediaStream([e.track]);
+    msg.style.display = "none";
+  };
+  pc.onicecandidate = (e) => {
+    if (e.candidate && clientId && ws.readyState === WebSocket.OPEN)
+      ws.send(JSON.stringify({type:"webrtc_ice", client_id:clientId,
+        candidate:e.candidate.candidate, sdpMid:e.candidate.sdpMid}));
+  };
+  ws.onerror = () => { msg.textContent = "Flux vidéo injoignable."; };
+  ws.onclose = () => { if (!$("#vid").srcObject) msg.textContent = "Flux vidéo fermé."; };
+  ws.onmessage = async (ev) => {
+    let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (m.type === "welcome" && typeof m.client_id === "string") {
+      clientId = m.client_id;
+      const offre = await pc.createOffer();
+      await pc.setLocalDescription(offre);
+      ws.send(JSON.stringify({type:"webrtc_offer", client_id:clientId, sdp:offre.sdp}));
+      return;
+    }
+    if (m.type === "webrtc_answer" || typeof m.sdp === "string") {
+      try {
+        await pc.setRemoteDescription({type:"answer", sdp:m.sdp});
+        for (const c of enAttente.splice(0)) await pc.addIceCandidate(c).catch(()=>{});
+      } catch (e) { msg.textContent = "Échec de la négociation vidéo."; }
+      return;
+    }
+    if (m.type === "webrtc_ice" && typeof m.candidate === "string") {
+      const c = {candidate: nettoie(m.candidate), sdpMid: m.sdpMid ?? "0"};
+      if (pc.remoteDescription) await pc.addIceCandidate(c).catch(()=>{});
+      else enAttente.push(c);
+    }
+  };
+})();
+</script>
+</body>
+</html>

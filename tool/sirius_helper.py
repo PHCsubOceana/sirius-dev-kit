@@ -57,7 +57,7 @@ import websockets
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
@@ -1387,6 +1387,77 @@ async def ws_front(ws: WebSocket):
         pass
     finally:
         front_clients.discard(ws)
+
+
+# ═══════════════════════════ déambulation libre ═══════════════════════════
+# Le nœud `deambulation.py` tourne À BORD du robot (le ToF n'existe que sur
+# ROS) et expose un petit service HTTP. Le helper n'est qu'un passe-plat : il
+# connaît déjà l'adresse du robot, le navigateur ne parle qu'au helper.
+DEAMB_PORT = 8790
+
+
+def _deamb_base() -> str:
+    # On vise `link.ip` — l'adresse CIBLE — et non `state.robot_ip`, qui n'est
+    # renseignée qu'une fois le WebSocket établi. C'est délibéré : si la liaison
+    # WebSocket tombe pendant que le robot marche, le bouton « Arrêter » doit
+    # continuer de fonctionner. Le service de déambulation est indépendant.
+    ip = (link.ip if link else None) or state.robot_ip
+    if not ip:
+        raise HTTPException(409, "Aucune adresse de robot — connecte-le d'abord "
+                                 "dans Studio 360.")
+    return f"http://{ip}:{DEAMB_PORT}"
+
+
+async def _deamb(methode: str, chemin: str, params: dict | None = None):
+    url = _deamb_base() + chemin
+    try:
+        async with httpx.AsyncClient(timeout=4) as c:
+            r = await c.request(methode, url, params=params)
+    except httpx.HTTPError:
+        raise HTTPException(
+            503, "Service de déambulation injoignable. Sur le robot : "
+                 "python3 deambulation.py --service")
+    if r.status_code >= 400:
+        raise HTTPException(r.status_code, r.text[:200])
+    return JSONResponse(r.json())
+
+
+@app.get("/api/deambulation/etat")
+async def deambulation_etat():
+    """Grille ToF, décision en cours et contexte, relus sur le robot."""
+    return await _deamb("GET", "/etat")
+
+
+@app.post("/api/deambulation/demarrer")
+async def deambulation_demarrer():
+    """Arme la marche. Le nœud réapprend son fond EN MARCHANT (~5 s) puis erre."""
+    return await _deamb("POST", "/demarrer")
+
+
+@app.post("/api/deambulation/arreter")
+async def deambulation_arreter():
+    """Coupe la marche et remet les consignes à zéro."""
+    return await _deamb("POST", "/arreter")
+
+
+@app.post("/api/deambulation/vitesse")
+async def deambulation_vitesse(v: float):
+    """Règle la consigne d'avance (bornée côté robot entre 0,05 et 1,0)."""
+    return await _deamb("POST", "/vitesse", {"v": v})
+
+
+# La page elle-même. Elle est autonome (un seul fichier, aucun assemblage) et
+# vit à côté de ce script ; le montage de l'interface React, plus bas, ne la
+# voit pas puisque cette route est déclarée avant lui.
+DEAMB_PAGE = Path(__file__).resolve().parent / "deambulation.html"
+
+
+@app.get("/deambulation")
+async def deambulation_page():
+    if not DEAMB_PAGE.is_file():
+        raise HTTPException(404, "deambulation.html absent du dossier du kit")
+    return FileResponse(str(DEAMB_PAGE), media_type="text/html; charset=utf-8",
+                        headers={"Cache-Control": "no-store"})
 
 
 # ═══════════════════ interface web servie par le helper ═══════════════════

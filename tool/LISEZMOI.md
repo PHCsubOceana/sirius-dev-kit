@@ -59,6 +59,33 @@ L'IP du robot s'affiche sur son écran, dans le menu Réseau.
 dans l'interface. Un robot simulé répond, avec des données calquées sur les
 mesures du vrai. Rien ne peut être endommagé — idéal pour montrer l'outil.
 
+### Déambulation — le robot se promène seul
+
+L'onglet **Déambulation** montre ce que le robot perçoit devant lui (son capteur
+de distance, seize zones en grille 4×4), ce qu'il en déduit, et permet de le
+lancer. Mais l'évitement lui-même tourne **à bord du robot** : le capteur de
+distance n'existe que sur le ROS embarqué, jamais sur le canal réseau que parle
+ce kit. Il faut donc y déposer un fichier, une fois :
+
+```
+scp deambulation.py root@<IP_DU_ROBOT>:/root/
+ssh root@<IP_DU_ROBOT>
+python3 /root/deambulation.py --service
+```
+
+L'onglet Déambulation devient alors vivant. Tant que ce programme ne tourne pas,
+il affiche « service injoignable » — c'est normal, il ne manque que ça.
+
+> ⚠️ **SOL PLAT UNIQUEMENT.** Jamais sur une table, un plan de travail ou un lit,
+> jamais près d'un escalier, d'une marche ou d'un bord. Le robot sait voir un
+> obstacle devant lui, et sait *en principe* voir le vide — mais **cette
+> détection du vide n'a jamais été éprouvée au bord d'un vrai dénivelé** : ne
+> comptez pas dessus. Il ne voit rien derrière lui. Restez à portée de main.
+>
+> Au lancement, **rien ne bouge** : le programme observe et écrit ce qu'il ferait.
+> Le robot ne marche que si vous cliquez **Démarrer**. **Arrêter**, ou les touches
+> **Échap** et **Espace**, le stoppent et remettent les consignes à zéro.
+
 ### Sur le téléphone
 
 **Double-clique `demarrer_telephone.bat`** (au lieu de `demarrer.bat`). La
@@ -216,6 +243,9 @@ demarrer.bat                 lancement avec le robot
 demarrer_simulateur.bat      lancement sans robot
 demarrer_telephone.bat       lancement en mode réseau (accès téléphone)
 sirius_helper.py             le pont robot ↔ navigateur (+ sécurité)
+deambulation.html            la page Déambulation, servie sur /deambulation
+deambulation.py              l'évitement d'obstacles — à DÉPOSER SUR LE ROBOT
+                             (voir « Déambulation » plus haut · sol plat)
 mock_robot.py                le robot simulé
 ui/                          l'interface web
 lire_limites_servos.sh       relevé des limites (avancé, SSH)
