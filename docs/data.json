@@ -9,12 +9,13 @@
       "deduit": "déduit du firmware ou du comportement, non confirmé",
       "a_confirmer": "hypothèse de travail, ne pas publier comme un fait"
     },
-    "revision_dossier": "r6",
-    "revision_dossier_date": "2026-07-26",
+    "revision_dossier": "r11",
+    "revision_dossier_date": "2026-07-27",
     "nouveautes_r3": "statut du firmware passé à vérifié (2.5.0 bêta du 23/07) ; changelog_public corrigé ; nouveaux blocs changelog_firmware, console_constructeur, canaux_ota ; outil_pilotage en v2.4.",
     "nouveautes_r4": "correction du réveil à distance (il est possible) ; outil en v2.5 avec la correction de cache.",
     "nouveautes_r5": "réponses aux questions d'intégration (§10) ; exception du premier réveil après mise sous tension ; annexe rapport_capteurs ; outil en v2.6.",
-    "nouveautes_r6": "les commandes de posture couché / debout sont vérifiées sur le robot réel."
+    "nouveautes_r6": "les commandes de posture couché / debout sont vérifiées sur le robot réel.",
+    "nouveautes_r11": "outil_pilotage passé en v2.8 (Studio360_pour_Sirius_v2.8.zip, 174 713 o / 171 Ko, SHA 03c7b9f4…9933b7) : la v2.7 puis la v2.8 sont empaquetées et publiées, le bloc n'était resté qu'en v2.6. §4 de la passerelle réécrit en conséquence ; taille v2.8 corrigée dans LISEZMOI (171 Ko) ; CHANGELOG copié dans annexes/ ; bandeaux de tous les documents réalignés sur r11."
   },
   "materiel": {
     "modele": "Hengbot Sirius",
@@ -422,11 +423,12 @@
     "renommage": "Renommé le 26/07/2026, en vigueur à partir de la v2.7 : « Sirius Studio » se confondait avec l'application OFFICIELLE de Hengbot. Les archives déjà diffusées (SiriusStudio_v1.9 à SiriusStudio_v2.6) gardent leur nom de fichier et leurs liens — aucun lien de téléchargement n'est cassé. Les noms de fichiers de code, les routes et les commandes réseau sont inchangés.",
     "mention_independance_fr": "Studio 360 pour Sirius (Studio 360) est un projet indépendant d'explorations360, sans lien ni affiliation avec Hengbot. Sirius et Hengbot sont des marques de leurs propriétaires respectifs. Ce kit est le fruit d'un travail de rétro-ingénierie de l'API du robot : il n'est ni fourni, ni approuvé, ni soutenu par le constructeur.",
     "mention_independance_en": "Studio 360 for Sirius (Studio 360) is an independent project by explorations360 — not affiliated with, endorsed by, or supported by Hengbot. Sirius and Hengbot are trademarks of their respective owners. This kit was reconstructed by reverse-engineering the robot's API; it is neither supplied nor approved by the manufacturer.",
-    "version_publiable": "2.6",
-    "fichier": "SiriusStudio_v2.6.zip",
-    "taille_octets": 132146,
-    "taille_lisible": "129 Ko",
-    "sha256": "eb6fcd75c78276e5bec7cd1ac2555eb7f2de4d30b2ca6403306d480cf4dfd2a4",
+    "version_publiable": "2.8",
+    "fichier": "Studio360_pour_Sirius_v2.8.zip",
+    "taille_octets": 174713,
+    "taille_lisible": "171 Ko",
+    "sha256": "03c7b9f45e03e5ed098a973fd42eced1f111d1abd01ee20a19bf1be02e9933b7",
+    "archives_anciennes": "SiriusStudio_v1.9 à SiriusStudio_v2.6 gardent leur nom de fichier et leurs liens ; la v2.6 (129 Ko, SHA eb6fcd75…dfd2a4) reste disponible à côté pour ne casser aucun lien.",
     "plateforme": "Windows (lanceurs .bat ; le pont Python est multiplateforme mais non testé ailleurs)",
     "prerequis": "Python 3 avec « Add Python to PATH » ; robot sur le même réseau Wi-Fi ; navigateur récent (WebRTC)",
     "connexion": "double-clic demarrer.bat -> le navigateur s'ouvre sur http://127.0.0.1:8787 -> saisir l'IP du robot dans l'interface -> Connecter",
@@ -437,9 +439,11 @@
     "nouveautes_2_3": "interface bilingue FR/EN ; le bouton de posture s'appelle « Couché » (EN : Lying down) au lieu de « Au sol », pour ne plus le confondre avec le mode Sol/Bureau (EN : Ground/Desktop) qui est l'environnement du robot",
     "nouveautes_2_5": "le pont envoie des en-têtes de cache explicites (no-store sur le HTML, immutable sur les fichiers hachés) : après une mise à jour, le navigateur ne peut plus servir l'ancienne interface tout en affichant le nouveau numéro de version.",
     "nouveautes_2_6": "posture réelle reflétée dans le sélecteur (déduite de l'action jouée, marquée comme telle, rien d'affiché tant qu'on ne sait pas) ; barre du haut qui ne déborde plus sous 1280 px ; animation de connexion jouée avant la bascule de page, 1,8 s.",
-    "version_courante_non_publiee": "2.7",
+    "version_courante": "2.8",
     "nouveautes_2_7": "nouvel onglet « Système » (vision : détection + suivi de visage et compteurs temps réel ; thermique : température batterie affichée, 4 sondes moteurs déclarées muettes, température CPU déclarée non disponible avec sa raison ; charge des 14 moteurs et coupe-circuit ; métriques système) ; l'interrupteur autonome de la barre du haut est désormais relié à la vraie route POST /api/modes/autonomous ; renommage du produit en Studio 360.",
-    "statut_2_7": "non empaquetée, non publiée — telechargement/ contient toujours SiriusStudio_v2.6.zip",
+    "statut_2_7": "empaquetée et publiée dans telechargement/ (archive reconstruite le 26/07 à partir des fichiers assainis de la v2.6, cf. JOURNAL r9)",
+    "nouveautes_2_8": "l'interface s'installe sur un téléphone (manifeste, icônes 192/512/maskable, icône Apple, plein écran iOS) ; thème posé avant le premier rendu, bouton sombre → clair → système, suivi à chaud du jour/nuit de la machine, plus de flash clair au chargement ; corrections de débordement en largeur téléphone. Le pincement pour zoomer reste actif, par choix d'accessibilité.",
+    "statut_2_8": "empaquetée et publiée dans telechargement/ — version courante",
     "reserves_2_7": {
       "commandes_non_eprouvees": [
         "MOTOR_SET_THERMAL_PROTECTION — nom réseau sûr (table des 59 commandes), charge utile {enabled} DÉDUITE du topic ROS /system/enable_thermal_protection, jamais confirmée sur le fil",

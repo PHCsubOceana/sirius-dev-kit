@@ -1,6 +1,6 @@
 # Le journal de version du firmware Sirius
 
-> **Dossier `site_web` — révision `r8` · 26 juillet 2026.**
+> **Dossier `site_web` — révision `r11` · 27 juillet 2026.**
 > Ce qui a changé depuis `r7` est listé dans **`JOURNAL.md`**, à lire en premier.
 
 *Nouveau en r3 — contenu inchangé depuis. Ce document décrit le firmware du
