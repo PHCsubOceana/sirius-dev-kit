@@ -12,6 +12,23 @@ indépendant*.
 ne plus se confondre avec l'application officielle du constructeur. Les archives
 déjà diffusées gardent leur nom de fichier.*
 
+**Nouveau en v2.8 : l'interface s'installe sur le téléphone.** Ouvre l'adresse
+du helper depuis le navigateur du téléphone — même réseau que le PC — puis
+« Ajouter à l'écran d'accueil ». L'application s'ouvre alors en plein écran,
+sans barre d'adresse, avec sa propre icône. Les cinq écrans sont utilisables à
+390 px de large, et le zoom reste actif si tu en as besoin.
+
+Sur iPhone, l'ajout à l'écran d'accueil suffit. Sur Android, Chrome réserve la
+proposition d'installation aux adresses sécurisées : la page reste parfaitement
+utilisable, mais sans l'installation en un clic — c'est une contrainte du
+navigateur, pas du kit.
+
+**Le thème suit maintenant l'ordinateur.** Le bouton de la barre du haut
+parcourt sombre, clair, puis « système ». Dans ce dernier mode, l'interface
+bascule avec le réglage jour/nuit de la machine, même en cours d'utilisation.
+Le thème choisi s'applique désormais avant le premier affichage : plus de flash
+clair au chargement.
+
 La version s'affiche à trois endroits : dans la fenêtre noire au démarrage,
 sur l'écran de connexion, et dans la barre du haut de l'interface. Elle vient
 du fichier `VERSION.txt` — un seul endroit à changer, tout suit.

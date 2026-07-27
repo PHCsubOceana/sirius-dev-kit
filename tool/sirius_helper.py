@@ -1413,7 +1413,11 @@ class UiFiles(StaticFiles):
     def file_response(self, *args, **kwargs):
         resp = super().file_response(*args, **kwargs)
         chemin = str(getattr(resp, "path", "") or "")
-        if chemin.endswith((".html", ".htm")) or chemin.endswith("index.html"):
+        # Le manifeste rejoint le HTML côté « jamais en cache » : il porte le
+        # nom, les couleurs et la liste des icônes de l'application installée,
+        # et un manifeste périmé fige ces valeurs sur le téléphone.
+        if (chemin.endswith((".html", ".htm")) or chemin.endswith("index.html")
+                or chemin.endswith("manifest.json")):
             resp.headers["Cache-Control"] = "no-store, must-revalidate"
             resp.headers["Pragma"] = "no-cache"
             resp.headers["Expires"] = "0"

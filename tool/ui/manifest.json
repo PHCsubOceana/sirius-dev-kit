@@ -1,0 +1,39 @@
+{
+  "name": "Studio 360 pour Sirius",
+  "short_name": "Studio 360",
+  "description": "Kit de développement pour le robot quadrupède Hengbot Sirius. Projet indépendant, non affilié à Hengbot : ce n'est pas l'application officielle.",
+  "id": "/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "icons/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icone-512-masquable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icone.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
