@@ -9,7 +9,7 @@
       "deduit": "déduit du firmware ou du comportement, non confirmé",
       "a_confirmer": "hypothèse de travail, ne pas publier comme un fait"
     },
-    "revision_dossier": "r15",
+    "revision_dossier": "r16",
     "revision_dossier_date": "2026-07-27",
     "nouveautes_r3": "statut du firmware passé à vérifié (2.5.0 bêta du 23/07) ; changelog_public corrigé ; nouveaux blocs changelog_firmware, console_constructeur, canaux_ota ; outil_pilotage en v2.4.",
     "nouveautes_r4": "correction du réveil à distance (il est possible) ; outil en v2.5 avec la correction de cache.",
@@ -19,7 +19,8 @@
     "nouveautes_r12": "outil_pilotage passé en v2.8.1 (Studio360_pour_Sirius_v2.8.1.zip, 175 436 o / 171 Ko, SHA 6ad3b326…2698a) : correctif du mobile annoncé en v2.8 — le pont n'écoutait que 127.0.0.1 et le frontend visait 127.0.0.1 en dur, donc aucun téléphone ne pouvait joindre l'interface. Ajout de --host au pont (défaut localhost), lanceur demarrer_telephone.bat, affichage de l'adresse LAN au démarrage, base API/WS du frontend dérivée de window.location. Pilotage confirmé depuis un téléphone. ⚠ le mode réseau expose le pilotage au Wi-Fi, sans mot de passe.",
     "nouveautes_r13": "retours d'intégration : §5 de la passerelle complété (captures 11 à 19 décrites, avec leurs réserves — dont 14_thermique_sondes_actives = simulateur, et 16_connexion_marque affiche v2.7) ; §4 clarifié (un seul lien de téléchargement en ligne, la v2.8.1) ; LISEZMOI corrigé (forme courte « Studio 360 », arborescence complétée : CHANGELOG dans annexes/ et images jusqu'à 20). Aucun changement d'outil.",
     "nouveautes_r14": "publication de la v2.8.2 : nouvel onglet « Déambulation » dans l'outil (champ ToF 4x4 en direct, décision du nœud, vidéo, Démarrer/Arrêter/vitesse). Le nœud de déambulation lui-même (deambulation.py, v13, réponse graduée contournement/pivot/recul) N'EST PAS publié : sa détection de vide n'a jamais été éprouvée au bord d'une table. Nouvelle capture 21_deambulation.png (vraie caméra + vraies distances).",
-    "nouveautes_r15": "le kit passe en v2.8.3 et EMBARQUE le nœud de déambulation (deambulation.py) : l'onglet devient pleinement utilisable par un tiers. Condition d'usage reprise partout — SOL PLAT uniquement, jamais sur une table ni près d'un escalier ou d'un bord ; la détection de vide n'a jamais été éprouvée au bord d'un vrai dénivelé. Au lancement le nœud n'agit pas : il observe, et ne marche que sur Démarrer."
+    "nouveautes_r15": "le kit passe en v2.8.3 et EMBARQUE le nœud de déambulation (deambulation.py) : l'onglet devient pleinement utilisable par un tiers. Condition d'usage reprise partout — SOL PLAT uniquement, jamais sur une table ni près d'un escalier ou d'un bord ; la détection de vide n'a jamais été éprouvée au bord d'un vrai dénivelé. Au lancement le nœud n'agit pas : il observe, et ne marche que sur Démarrer.",
+    "nouveautes_r16": "correction signalée par l'intégration : le bloc racine « deambulation » était resté en version 12 / statut a_confirmer, alors que le nœud publié est en v13. Bloc réécrit et mis en cohérence — version et itérations à 13, statut « verifie », et surtout deux champs séparés : ce_qui_est_verifie (le nœud marche et esquive sur le robot, service HTTP vérifié de bout en bout) et ce_qui_ne_l_est_pas (détection de vide jamais éprouvée au bord d'un dénivelé ; comportement gradué de la v13 validé hors ligne seulement ; angle mort du masque entre 170 et 225 mm). Aucun changement d'outil : le kit reste en v2.8.3."
   },
   "materiel": {
     "modele": "Hengbot Sirius",
@@ -307,15 +308,20 @@
     }
   },
   "deambulation": {
-    "fichier": "scripts/deambulation.py",
-    "version": 12,
-    "ou_ca_tourne": "à bord du robot (le ToF n'existe que sur ROS)",
+    "fichier": "deambulation.py — fourni dans le kit depuis la v2.8.3 ; à déposer sur le robot (scp) puis lancer avec --service",
+    "version": 13,
+    "ou_ca_tourne": "à bord du robot (le ToF n'existe que sur ROS, pas sur le WebSocket)",
     "principe": "apprentissage du décor en marchant sous forme d'enveloppe min/max par zone, puis réaction aux seuls écarts",
-    "iterations": 12,
+    "iterations": 13,
     "tests_hors_ligne": 34,
-    "meilleur_resultat_terrain": "11 secondes de marche rectiligne à pleine consigne, esquive d'obstacles, arrêt propre malgré une coupure Wi-Fi",
-    "statut": "a_confirmer",
-    "note": "La v12 n'a pas encore tourné sur le robot au moment de la rédaction. Apports de la v12 : masque de la bande 170-225 mm (signature de la mâchoire) uniquement si les rangées basses ne corroborent pas, et marge proportionnelle au fond appris (30 %, plancher 50 mm) au lieu d'une marge fixe de 120 mm."
+    "reponse_graduee": "Depuis la v13 la réponse est graduée : au-delà de 300 mm il ESQUIVE en continuant d'avancer, en braquant du côté le moins encombré (comparaison de l'encombrement cumulé à gauche et à droite, réévaluée à chaque cycle) ; en dessous de 300 mm il pivote sur place ; il ne RECULE qu'en dessous de 200 mm, ou s'il est coincé. Le recul est aveugle — le robot ne voit rien derrière lui — d'où cette gradation.",
+    "service_http": "En mode --service, le nœud expose sur le port 8790 la grille ToF, sa décision et son motif, et accepte démarrer / arrêter / vitesse. C'est ce que l'onglet « Déambulation » de Studio 360 affiche et commande, via un passe-plat du pont.",
+    "au_lancement": "Il n'agit pas : il observe et écrit ce qu'il ferait. Le robot ne marche que sur commande explicite (--marche, ou le bouton Démarrer). Échap et Espace arrêtent depuis la page.",
+    "statut": "verifie",
+    "ce_qui_est_verifie": "Le nœud tourne sur le robot et l'évitement fonctionne : marche rectiligne à pleine consigne, esquive d'obstacles, arrêt propre malgré une coupure Wi-Fi (v9 et v10, relevés du 25/07). Le service HTTP et la remontée de la grille ToF sont vérifiés de bout en bout le 27/07.",
+    "ce_qui_ne_l_est_pas": "1) La détection de VIDE n'a JAMAIS été éprouvée au bord d'un vrai dénivelé — c'est la réserve principale, et la raison de la condition « sol plat ». 2) Le comportement gradué de la v13 est validé hors ligne (34 tests sur trames réelles + scénarios d'approche) mais n'a pas encore marché sur le robot. 3) Un objet étroit et haut situé entre 170 et 225 mm, vu par les seules rangées hautes, peut être ignoré par le masque anti-mâchoire ; en pratique un obstacle si proche occulte aussi les rangées basses.",
+    "conditions_usage": "SOL PLAT UNIQUEMENT — jamais sur une table, un plan de travail ou un lit, jamais près d'un escalier, d'une marche ou d'un bord. Le robot ne voit rien derrière lui. Rester à portée de main.",
+    "note": "Apports de la v12 : masque de la bande 170-225 mm (signature de la mâchoire du robot) appliqué aux seules rangées hautes et seulement si les rangées basses ne corroborent pas, et marge proportionnelle au fond appris (30 %, plancher 50 mm) au lieu d'une marge fixe. Apports de la v13 : réponse graduée et service HTTP."
   },
   "ecosysteme": {
     "tutoriels_developpeur_youtube": {
