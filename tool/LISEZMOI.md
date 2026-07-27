@@ -12,11 +12,18 @@ indépendant*.
 ne plus se confondre avec l'application officielle du constructeur. Les archives
 déjà diffusées gardent leur nom de fichier.*
 
-**Nouveau en v2.8 : l'interface s'installe sur le téléphone.** Ouvre l'adresse
-du helper depuis le navigateur du téléphone — même réseau que le PC — puis
-« Ajouter à l'écran d'accueil ». L'application s'ouvre alors en plein écran,
-sans barre d'adresse, avec sa propre icône. Les cinq écrans sont utilisables à
-390 px de large, et le zoom reste actif si tu en as besoin.
+**L'interface s'installe sur le téléphone (rendu fonctionnel en v2.8.1).** Par
+défaut le helper n'écoute que sur ce PC ; lance **`demarrer_telephone.bat`** pour
+le rendre joignable depuis le Wi-Fi. La fenêtre affiche alors l'adresse à taper
+dans le navigateur du téléphone (la ligne « à ouvrir sur le téléphone » — même
+réseau que le PC). Ouvre-la, puis « Ajouter à l'écran d'accueil » : l'application
+s'ouvre en plein écran, sans barre d'adresse, avec sa propre icône. Les cinq
+écrans sont utilisables à 390 px de large, et le zoom reste actif si tu en as
+besoin.
+
+⚠️ Le mode téléphone rend le pilotage du robot accessible à **tout le Wi-Fi, sans
+mot de passe** : à n'utiliser que sur un réseau de confiance. Le coupe-circuit
+reste actif, et le mode PC (`demarrer.bat`) n'expose rien.
 
 Sur iPhone, l'ajout à l'écran d'accueil suffit. Sur Android, Chrome réserve la
 proposition d'installation aux adresses sécurisées : la page reste parfaitement
@@ -51,6 +58,16 @@ L'IP du robot s'affiche sur son écran, dans le menu Réseau.
 **Double-clique `demarrer_simulateur.bat`**, puis connecte-toi à `127.0.0.1`
 dans l'interface. Un robot simulé répond, avec des données calquées sur les
 mesures du vrai. Rien ne peut être endommagé — idéal pour montrer l'outil.
+
+### Sur le téléphone
+
+**Double-clique `demarrer_telephone.bat`** (au lieu de `demarrer.bat`). La
+fenêtre affiche une adresse du type `http://192.168.x.x:8787` : tape-la dans le
+navigateur de ton téléphone, sur le **même Wi-Fi** que le PC, puis « Ajouter à
+l'écran d'accueil » pour l'installer.
+
+⚠️ Ce mode ouvre le pilotage du robot à tout le réseau Wi-Fi, **sans mot de
+passe** — réseau de confiance uniquement.
 
 > La première utilisation installe les dépendances Python (~30 s). Ensuite le
 > démarrage est immédiat. Python doit être installé — https://www.python.org/downloads/
@@ -197,6 +214,7 @@ sessions très longues en continu, les moteurs chauffent.
 VERSION.txt                  le numéro de version du kit
 demarrer.bat                 lancement avec le robot
 demarrer_simulateur.bat      lancement sans robot
+demarrer_telephone.bat       lancement en mode réseau (accès téléphone)
 sirius_helper.py             le pont robot ↔ navigateur (+ sécurité)
 mock_robot.py                le robot simulé
 ui/                          l'interface web

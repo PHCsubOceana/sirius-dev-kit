@@ -1430,6 +1430,21 @@ if UI_DIR.is_dir():
     app.mount("/", UiFiles(directory=str(UI_DIR), html=True), name="ui")
 
 
+def _ip_lan():
+    """Adresse IPv4 du PC sur le réseau local, pour l'afficher au démarrage en
+    mode réseau. Le socket UDP ne transmet aucune donnée : il sert seulement à
+    savoir quelle interface le système utiliserait pour sortir."""
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except Exception:
+        return None
+    finally:
+        s.close()
+
+
 def main():
     global link
     ap = argparse.ArgumentParser(description=f"Helper local de {APP_NAME} ({APP_SHORT}). "
@@ -1437,6 +1452,11 @@ def main():
     ap.add_argument("--robot", default=None,
                     help="IP du robot. Optionnel : sans lui, l'adresse se saisit dans l'interface.")
     ap.add_argument("--port", type=int, default=8787, help="port local du helper")
+    ap.add_argument("--host", default="127.0.0.1",
+                    help="interface d'écoute. 127.0.0.1 = ce PC uniquement (défaut) ; "
+                         "0.0.0.0 = joignable depuis le réseau local, p.ex. un téléphone "
+                         "(voir demarrer_telephone.bat). En 0.0.0.0 le pilotage est exposé "
+                         "à tout le Wi-Fi, sans mot de passe.")
     ap.add_argument("--no-safety", action="store_true", help="désactive le coupe-circuit (déconseillé)")
     ap.add_argument("--no-browser", action="store_true", help="ne pas ouvrir le navigateur au démarrage")
     args = ap.parse_args()
@@ -1457,16 +1477,27 @@ def main():
     print("           celle de Hengbot ; ceci est un reverse d'explorations360.")
     print(f"  cible   : {cible}")
     print(f"  sécurité: {SAFETY_LOAD_THRESHOLD} ‰ soutenus {SAFETY_SUSTAIN_S} s → arrêt automatique")
+    reseau = args.host not in ("127.0.0.1", "localhost")
     if UI_DIR.is_dir():
-        print(f"  interface: http://127.0.0.1:{args.port}  ← ouvre cette adresse")
+        print(f"  interface: http://127.0.0.1:{args.port}  ← ouvre cette adresse (sur ce PC)")
+        if reseau:
+            ip = _ip_lan()
+            if ip:
+                print(f"             http://{ip}:{args.port}  ← à ouvrir sur le téléphone (même Wi-Fi)")
+            else:
+                print(f"             (adresse LAN introuvable — regarde l'IP Wi-Fi du PC, port {args.port})")
     else:
         print("  interface: dossier ui/ absent → API seule (docs sur /docs)")
+    if reseau:
+        print("  ⚠ MODE RÉSEAU : le pilotage du robot est accessible à TOUT le Wi-Fi,")
+        print("    sans mot de passe. À n'utiliser que sur un réseau de confiance.")
+        print("    Le coupe-circuit reste actif ; ferme cette fenêtre pour tout couper.")
     if not args.no_browser:
         import threading, webbrowser
         threading.Timer(1.5, lambda: webbrowser.open(f"http://127.0.0.1:{args.port}")).start()
 
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
 
 
 if __name__ == "__main__":
