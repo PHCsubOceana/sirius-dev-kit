@@ -9,14 +9,15 @@
       "deduit": "déduit du firmware ou du comportement, non confirmé",
       "a_confirmer": "hypothèse de travail, ne pas publier comme un fait"
     },
-    "revision_dossier": "r12",
+    "revision_dossier": "r13",
     "revision_dossier_date": "2026-07-27",
     "nouveautes_r3": "statut du firmware passé à vérifié (2.5.0 bêta du 23/07) ; changelog_public corrigé ; nouveaux blocs changelog_firmware, console_constructeur, canaux_ota ; outil_pilotage en v2.4.",
     "nouveautes_r4": "correction du réveil à distance (il est possible) ; outil en v2.5 avec la correction de cache.",
     "nouveautes_r5": "réponses aux questions d'intégration (§10) ; exception du premier réveil après mise sous tension ; annexe rapport_capteurs ; outil en v2.6.",
     "nouveautes_r6": "les commandes de posture couché / debout sont vérifiées sur le robot réel.",
     "nouveautes_r11": "outil_pilotage passé en v2.8 (Studio360_pour_Sirius_v2.8.zip, 174 713 o / 171 Ko, SHA 03c7b9f4…9933b7) : la v2.7 puis la v2.8 sont empaquetées et publiées, le bloc n'était resté qu'en v2.6. §4 de la passerelle réécrit en conséquence ; taille v2.8 corrigée dans LISEZMOI (171 Ko) ; CHANGELOG copié dans annexes/ ; bandeaux de tous les documents réalignés sur r11.",
-    "nouveautes_r12": "outil_pilotage passé en v2.8.1 (Studio360_pour_Sirius_v2.8.1.zip, 175 436 o / 171 Ko, SHA 6ad3b326…2698a) : correctif du mobile annoncé en v2.8 — le pont n'écoutait que 127.0.0.1 et le frontend visait 127.0.0.1 en dur, donc aucun téléphone ne pouvait joindre l'interface. Ajout de --host au pont (défaut localhost), lanceur demarrer_telephone.bat, affichage de l'adresse LAN au démarrage, base API/WS du frontend dérivée de window.location. Pilotage confirmé depuis un téléphone. ⚠ le mode réseau expose le pilotage au Wi-Fi, sans mot de passe."
+    "nouveautes_r12": "outil_pilotage passé en v2.8.1 (Studio360_pour_Sirius_v2.8.1.zip, 175 436 o / 171 Ko, SHA 6ad3b326…2698a) : correctif du mobile annoncé en v2.8 — le pont n'écoutait que 127.0.0.1 et le frontend visait 127.0.0.1 en dur, donc aucun téléphone ne pouvait joindre l'interface. Ajout de --host au pont (défaut localhost), lanceur demarrer_telephone.bat, affichage de l'adresse LAN au démarrage, base API/WS du frontend dérivée de window.location. Pilotage confirmé depuis un téléphone. ⚠ le mode réseau expose le pilotage au Wi-Fi, sans mot de passe.",
+    "nouveautes_r13": "retours d'intégration : §5 de la passerelle complété (captures 11 à 19 décrites, avec leurs réserves — dont 14_thermique_sondes_actives = simulateur, et 16_connexion_marque affiche v2.7) ; §4 clarifié (un seul lien de téléchargement en ligne, la v2.8.1) ; LISEZMOI corrigé (forme courte « Studio 360 », arborescence complétée : CHANGELOG dans annexes/ et images jusqu'à 20). Aucun changement d'outil."
   },
   "materiel": {
     "modele": "Hengbot Sirius",
