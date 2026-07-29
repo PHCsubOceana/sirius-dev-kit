@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio 360 pour Sirius</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+  :root {
+    color-scheme: dark;
+    --plane:#0b0d10; --surface-1:#141619; --surface-2:#1c2026; --surface-3:#232830;
+    --text-primary:#fff; --text-secondary:#b4bcc8; --text-muted:#7d8794;
+    --border:#ffffff17; --border-strong:#ffffff29;
+    --accent:#22d3ee; --accent-fill:#18a5c4; --accent-soft:#22d3ee1f;
+    --good:#0ca30c; --critical:#d03b3b;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --plane:#f2f4f6; --surface-1:#fcfcfb; --surface-2:#f1f2f4; --surface-3:#e7e9ec;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#6b7280;
+    --border:#0b0b0b1c; --border-strong:#0b0b0b33;
+    --accent:#0891b2; --accent-fill:#0891b2; --accent-soft:#0891b21a;
+  }
+  * { box-sizing:border-box; }
+  html,body { height:100%; }
+  body { margin:0; background:var(--plane); color:var(--text-primary);
+         font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+         display:flex; flex-direction:column; overflow:hidden; }
+  .shellbar { display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+              padding:8px 14px; background:var(--surface-1);
+              border-bottom:1px solid var(--border); flex:none; }
+  .brand { display:flex; align-items:center; gap:9px; font-weight:680; font-size:15px; white-space:nowrap;
+           text-decoration:none; color:inherit; padding:4px 8px; border-radius:9px; }
+  .brand:hover { background:var(--surface-2); }
+  .brand .logo { width:30px;height:30px;border-radius:8px;background:var(--accent-soft);
+                 display:grid;place-items:center;color:var(--accent);font-size:16px; }
+  .brand .brandsub { color:var(--text-muted); font-weight:500; font-size:12.5px; }
+  .retour { font:inherit; font-weight:600; font-size:13.5px; text-decoration:none;
+            color:var(--text-secondary); border:1px solid var(--border-strong);
+            background:var(--surface-2); padding:8px 12px; border-radius:9px;
+            min-height:40px; display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
+  .retour:hover { background:var(--surface-3); color:var(--text-primary); }
+  .tabs { display:flex; gap:4px; flex-wrap:wrap; }
+  .tab { font:inherit; font-weight:600; font-size:14px; cursor:pointer;
+         border:1px solid transparent; background:transparent; color:var(--text-secondary);
+         padding:8px 14px; border-radius:9px; min-height:40px; display:inline-flex; align-items:center; gap:7px; }
+  .tab:hover { background:var(--surface-2); color:var(--text-primary); }
+  .tab.active { background:var(--accent-soft); color:var(--accent); border-color:color-mix(in srgb,var(--accent) 35%,transparent); }
+  .tab .ic { font-size:15px; }
+  .spacer { flex:1 1 auto; }
+  .chip { display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+          background:var(--surface-2);border:1px solid var(--border);font-size:12.5px;color:var(--text-secondary);white-space:nowrap; }
+  .dot { width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex:none; }
+  #theme { font:inherit;font-weight:600;border-radius:9px;cursor:pointer;padding:6px 10px;
+           border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-primary);min-height:36px; }
+  .stage { flex:1 1 auto; position:relative; background:var(--plane); }
+  iframe#frame { position:absolute; inset:0; width:100%; height:100%; border:0; background:var(--plane); }
+  /* écran étroit : la marque passe au-dessus, les onglets défilent */
+  @media (max-width:640px){
+    .brand .brandsub { display:none; }
+    .tabs { order:3; width:100%; overflow-x:auto; }
+  }
+</style>
+</head>
+<body>
+<header class="shellbar">
+  <a class="brand" href="/" target="_top" title="Revenir à l'interface principale Studio 360"><span class="logo">◎</span> Studio 360 <span class="brandsub">pour Sirius</span></a>
+  <a class="retour" href="/" target="_top" title="Revenir à l'interface principale (pilotage, actions, système…)">← Interface principale</a>
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-view="deambulation"><span class="ic">◎</span>Déambulation</button>
+    <button class="tab" data-view="enchainements"><span class="ic">▦</span>Enchaînements</button>
+    <button class="tab" data-view="tableau"><span class="ic">❤</span>Vie du robot</button>
+  </nav>
+  <span class="spacer"></span>
+  <span class="chip"><i class="dot" id="dot-link"></i><span id="lbl-link">liaison…</span></span>
+  <button id="theme" title="Thème clair / sombre">◐</button>
+</header>
+<div class="stage"><iframe id="frame" title="Studio 360"></iframe></div>
+
+<script>
+"use strict";
+const $ = (s)=>document.querySelector(s);
+const VUES = ["deambulation","enchainements","tableau"];
+const DEFAUT = "deambulation";
+
+/* thème (clé partagée avec les outils, même origine) */
+(function(){ const k="sirius.theme";
+  const res=(v)=>(v==="auto"||v==="system")?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):v;
+  const app=()=>{let v=null;try{v=localStorage.getItem(k);}catch(e){} const t=res(v);
+    if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;};
+  app(); addEventListener("storage",e=>{if(e.key===k)app();});
+  $("#theme").onclick=()=>{const el=document.documentElement;const t=el.dataset.theme==="light"?"dark":"light";
+    el.dataset.theme=t;try{localStorage.setItem(k,t);}catch(e){}};
+})();
+
+/* navigation par onglets — on change la source de l'iframe, jamais de rechargement de la coquille */
+const frame = $("#frame");
+let vueActive = null;
+function montre(vue){
+  if(!VUES.includes(vue)) vue = DEFAUT;
+  if(vue === vueActive) return;
+  vueActive = vue;
+  // ?shell=1 : l'outil sait qu'il est dans la coquille (qui fournit déjà la
+  // navigation) et masque ses propres liens. Sans ce marqueur — par exemple
+  // encastré dans l'onglet Déambulation de l'interface principale — il garde
+  // ses liens, sinon les nouveaux outils deviendraient inatteignables.
+  frame.src = "/" + vue + "?shell=1";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active", b.dataset.view===vue));
+  if(location.hash.slice(1)!==vue){ try{ history.replaceState(null,"","#"+vue); }catch(e){ location.hash=vue; } }
+}
+document.querySelectorAll(".tab").forEach(b=> b.onclick = ()=>montre(b.dataset.view));
+addEventListener("hashchange", ()=>montre(location.hash.slice(1)));
+montre(location.hash.slice(1) || DEFAUT);
+
+/* état de connexion (la coquille interroge, les outils font de même de leur côté) */
+async function ping(){
+  try{ const r=await fetch("/api/status",{cache:"no-store"});
+    if(r.ok){ const j=await r.json();
+      $("#dot-link").style.background=j.connected?"var(--good)":"var(--critical)";
+      $("#lbl-link").textContent=j.connected?"robot connecté":"robot déconnecté"; return; } }catch(e){}
+  $("#dot-link").style.background="var(--critical)"; $("#lbl-link").textContent="helper injoignable";
+}
+ping(); setInterval(ping,3000);
+</script>
+</body>
+</html>

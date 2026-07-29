@@ -95,16 +95,20 @@ robot surveillé.
 """
 
 import argparse
+import json
 import math
+import queue
 import signal
+import threading
 import time
+import uuid
 from collections import deque
 
 # Annoncée au démarrage. Leçon du 25/07 : une session entière a été menée
 # avec une version périmée du fichier sans que personne s'en aperçoive —
 # les corrections étaient sur le PC, pas sur le robot. Un numéro affiché
 # en première ligne rend la confusion impossible.
-VERSION = "13 — esquive en marche : réponse graduée contournement / pivot / recul (27/07)"
+VERSION = "15 — animation à l'approche avant recul + recul-vide borné (28/07)"
 
 # ═══════════════════════════ géométrie du capteur ═══════════════════════════
 HORS_PORTEE = 2047        # mm : le capteur ne voit rien d'assez proche
@@ -148,6 +152,16 @@ MARGE_MINI = 50            # mm : plancher, pour ne pas réagir au bruit
 MARGE_PART = 0.30          # part du fond retenue comme marge
 SEUIL_ABSOLU = 250         # mm : si près, c'est un obstacle même sans référence
 SEUIL_RECUL = 200          # mm : trop près pour tourner sur place → on recule
+# ── Départage GAUCHE / DROITE quand les deux côtés se valent ────────────────
+# Remarque de Phil (28/07) : à l'évitement, le robot partait presque toujours
+# sur sa gauche. La cause n'était pas la mesure — elle fuit bien le côté le
+# plus chargé — mais le DÉPARTAGE des cas symétriques : obstacle bien centré,
+# détection d'un vide, ou rien de vraiment latéralisé. Dans ces cas gauche et
+# droite s'équivalent, et l'ancien code retombait TOUJOURS du même côté (le
+# « else » valait gauche). Désormais, en deçà de ce seuil d'écart cumulé, on
+# considère les deux moitiés équivalentes et on ALTERNE le sens d'une manœuvre
+# à l'autre, au lieu de repartir systématiquement à gauche.
+SEUIL_SYMETRIE = 80        # mm cumulés : en deçà, les deux moitiés s'équivalent
 # ── La réponse est GRADUÉE, du plus doux au plus brutal ────────────────────
 # Jusqu'à la v12 tout obstacle confirmé provoquait un pivot sur place, moteurs
 # à l'arrêt : brutal, et inutile quand l'objet est encore loin. Désormais :
@@ -163,6 +177,22 @@ SEUIL_CONTOURNE = 300      # mm : au-dessus, on esquive sans cesser d'avancer
 FACTEUR_CONTOURNE_V = 0.6  # on lève le pied pendant l'esquive
 FACTEUR_CONTOURNE_W = 0.9  # sans braquer tout à fait autant qu'un pivot
 CONTOURNE_MAX = 3.0        # s d'esquive sans dégagement → on pivote pour de bon
+
+# ── Animation d'évitement (demande de Phil, 28/07) ─────────────────────────
+# Quand le robot s'approche trop d'un obstacle, on peut lui faire jouer une
+# ANIMATION de la bibliothèque (ex. « peer » curieux, « ponder » réflexion)
+# AVANT de reculer — c'est plus expressif qu'un recul sec. Le Cerveau se
+# contente d'ÉMETTRE une intention (self.anim_a_jouer) ; c'est la couche ROS
+# qui la joue réellement, pour que decide() reste pur et testable au sol.
+# Deux garde-fous : jamais d'animation pour un VIDE (on ne fige pas le robot au
+# bord d'un dénivelé — cf. _anim_pour), et un cooldown pour ne pas la rejouer
+# en boucle face à un obstacle tenace.
+SEUIL_ANIM = 240           # mm : sous ce seuil, si une animation est assignée à
+                           # « approche », on la joue avant de reculer (entre
+                           # SEUIL_RECUL et SEUIL_CONTOURNE)
+DUREE_ANIM = 2.5           # s : durée estimée d'une action ; borne l'état « anime »
+                           # même si la fin d'action n'est pas signalée par le robot
+ANIM_COOLDOWN = 8.0        # s : délai minimal entre deux animations (anti-boucle)
 
 # ── Le masque anti-mâchoire ────────────────────────────────────────────────
 # Signature relevée sur dix sessions : un « obstacle » à 191 mm en moyenne,
@@ -240,7 +270,7 @@ class Cerveau:
     permet — sans lidar, prétendre cartographier serait un mensonge.
     """
 
-    def __init__(self, vitesse=None, rotation=None):
+    def __init__(self, vitesse=None, rotation=None, animations=None):
         # Bug de la v7 : --vitesse existait mais n'était lu nulle part, la
         # constante du module s'appliquait quoi qu'on demande.
         self.vitesse = VITESSE_AVANT if vitesse is None else float(vitesse)
@@ -255,12 +285,24 @@ class Cerveau:
         self._rotation_depuis = None   # début de la rotation en cours
         self._recul_depuis = None      # début du recul en cours
         self._contourne_depuis = None  # début du contournement en marche
+        self._reoriente_vide_depuis = None  # pivot de réorientation après recul-vide trop long
         self.assiette_ref = None    # tangage du CORPS au moment de l'apprentissage
         self.geometrie_douteuse = False
         self.etat = "attente"
         self.depuis = time.monotonic()
         self.motif = "démarrage"
         self.sens_rotation = 1.0    # +1 = vers la gauche
+        # Sens retenu quand les deux côtés s'équivalent (obstacle centré, vide,
+        # rien de latéralisé). On l'ALTERNE à la fin de chaque manœuvre pour ne
+        # plus repartir toujours du même côté — le biais gauche relevé par Phil.
+        # Il démarre à droite (−1), à l'opposé de l'ancien réflexe gauche.
+        self._sens_defaut_symetrie = -1.0
+        # Animations d'évitement : mapping événement → nom d'action (ou None).
+        # `anim_a_jouer` est l'INTENTION one-shot lue puis remise à None par la
+        # couche ROS ; `_anim_derniere_a` horodate la dernière pour le cooldown.
+        self.animations = dict(animations or {})
+        self.anim_a_jouer = None
+        self._anim_derniere_a = -1e9
         self.historique = deque(maxlen=8)
 
     # ---------- lecture du champ ----------
@@ -430,22 +472,69 @@ class Cerveau:
             return perdues
         return []
 
+    def _anim_pour(self, evenement, maintenant):
+        """
+        Nom d'animation à jouer pour un événement d'évitement, ou None.
+
+        Deux garde-fous durs, ici et pas ailleurs pour qu'ils soient testables :
+        · JAMAIS d'animation pour un « vide » — on ne fige pas le robot au bord
+          d'un dénivelé, quoi que l'utilisateur ait configuré ;
+        · cooldown : pas de nouvelle animation tant que ANIM_COOLDOWN n'est pas
+          écoulé, pour ne pas la rejouer en boucle face à un obstacle tenace.
+        """
+        if evenement == "vide":
+            return None
+        nom = (self.animations or {}).get(evenement)
+        if not nom:
+            return None
+        if maintenant - self._anim_derniere_a < ANIM_COOLDOWN:
+            return None
+        return nom
+
     def cote_le_plus_libre(self, grille):
         """
         +1 pour la gauche, -1 pour la droite : on fuit le côté le plus
         encombré, mesuré en écart cumulé au fond — même raisonnement que
         pour la détection, donc insensible à la posture de la tête.
+
+        L'encombrement d'une zone est BORNÉ à sa proximité absolue
+        (SEUIL_OBSTACLE − distance). Sans cette borne, une zone qui n'avait
+        pas de fond de référence (elle ne voyait que du vide à l'apprentissage)
+        pesait `HORS_PORTEE − distance` ≈ 1600 mm, écrasant le vrai signal des
+        zones qui voient le sol (quelques centaines de mm). Comme, sur ce
+        robot, ces zones-là sont surtout à DROITE, tout obstacle frontal
+        paraissait « bien plus chargé à droite » et le robot fuyait toujours à
+        gauche : le biais relevé par Phil (28/07). Bornée à la proximité, la
+        mesure est à la même échelle partout, et le sol — symétrique — se
+        compense entre les deux moitiés.
+
+        Cas SYMÉTRIQUE (obstacle bien centré, vide, ou rien de latéralisé) :
+        les deux moitiés s'équivalent, à SEUIL_SYMETRIE près. On ne retombe
+        alors PLUS toujours à gauche : on renvoie le sens de départage courant,
+        ALTERNÉ d'une manœuvre à l'autre (voir _passe). Ce sens reste STABLE
+        pendant une même manœuvre — pas recalculé au bruit près à chaque
+        cycle —, donc pas de tremblement quand un obstacle centré est esquivé.
         """
         def encombrement(idx):
             total = 0.0
             for i in idx:
-                e = self._ecart(grille, i)
-                if e is not None and e > 0:
-                    total += e
+                d = grille[i]
+                if d is None or not (PORTEE_MIN <= d < HORS_PORTEE):
+                    continue
+                if d >= SEUIL_OBSTACLE:
+                    continue                     # trop loin pour peser
+                plafond = SEUIL_OBSTACLE - d     # proximité absolue = borne haute
+                env = (self.enveloppe or {}).get(i)
+                if env is None:
+                    total += plafond             # pas de fond : la proximité seule
+                else:
+                    total += min(max(0.0, env[0] - d), plafond)
             return total
 
         g = encombrement(MOITIE_GAUCHE)
         d = encombrement(MOITIE_DROITE)
+        if abs(g - d) <= SEUIL_SYMETRIE:
+            return self._sens_defaut_symetrie   # côtés équivalents : on alterne
         return -1.0 if g > d else 1.0   # plus encombré à gauche → on tourne à droite
 
     # ---------- machine à états ----------
@@ -479,9 +568,53 @@ class Cerveau:
         #    robot pour parcourir la moindre distance à 0,10 m/s.
         perdues = self.vide(grille)
         self._compteur_vide = self._compteur_vide + 1 if perdues else 0
+        if not perdues:
+            self._reoriente_vide_depuis = None   # plus de vide : on oublie la réorientation
         if perdues and self._compteur_vide >= PERSISTANCE:
-            self.sens_rotation = self.cote_le_plus_libre(grille)
-            return self._passe("recule", "VIDE devant — zones %s" % perdues,
+            # Le recul est AVEUGLE (rien derrière le robot). Même face à un vide
+            # qui persiste, on ne recule pas indéfiniment vers l'arrière qu'on ne
+            # voit pas : passé RECUL_MAX, on PIVOTE sur place — la rotation ne
+            # translate pas, donc elle reste sûre au bord d'un dénivelé. Sans
+            # cette borne (bug du 28/07), un bord devant ET derrière (petite
+            # table) faisait reculer le robot jusqu'à la chute arrière, car cette
+            # branche renvoyait « recule » à chaque cycle AVANT le garde-fou 3bis.
+            #
+            # Le pivot de réorientation est PROTÉGÉ pendant DUREE_ROTATION : tant
+            # qu'il tourne, on ne le renvoie pas en marche arrière même si le vide
+            # persiste (sans quoi il ne durerait qu'un cycle et ne réorienterait
+            # rien). Une fois le pivot fini, si le vide est toujours là, on repart
+            # pour un cycle recul→pivot — le robot finit par se détourner du bord.
+            if self._reoriente_vide_depuis is not None:
+                if maintenant - self._reoriente_vide_depuis < DUREE_ROTATION:
+                    pass  # pivot en cours : on laisse la section 4 le poursuivre
+                else:
+                    self._reoriente_vide_depuis = None
+            if self._reoriente_vide_depuis is None:
+                if self.etat == "recule":
+                    if self._recul_depuis is None:
+                        self._recul_depuis = maintenant
+                    if maintenant - self._recul_depuis > RECUL_MAX:
+                        self._recul_depuis = None
+                        self._reoriente_vide_depuis = maintenant
+                        self.sens_rotation = self.cote_le_plus_libre(grille)
+                        return self._passe("tourne",
+                                           "vide devant mais recul trop long — on pivote",
+                                           maintenant, 0.0, self.sens_rotation * self.rotation)
+                self.sens_rotation = self.cote_le_plus_libre(grille)
+                return self._passe("recule", "VIDE devant — zones %s" % perdues,
+                                   maintenant, -self.vitesse_recul, 0.0)
+            # sinon : réorientation en cours → on tombe dans la suite (section 4
+            # fera tourner le robot jusqu'à la fin du pivot).
+
+        # 2ter. animation d'évitement en cours : la démarche est à l'ARRÊT (gait
+        #       nul) le temps que l'action se joue, PUIS on recule. Le VIDE
+        #       (section 2, au-dessus) reste prioritaire et interrompt l'animation
+        #       si un bord surgit. Bornée par DUREE_ANIM — le robot ne reste
+        #       jamais figé même si la fin d'action n'est pas signalée.
+        if self.etat == "anime":
+            if maintenant - self.depuis < DUREE_ANIM:
+                return 0.0, 0.0, self.etat, self.motif
+            return self._passe("recule", "fin d'animation — on recule",
                                maintenant, -self.vitesse_recul, 0.0)
 
         # 3bis. le recul est aveugle : on ne le laisse jamais s'éterniser.
@@ -502,10 +635,23 @@ class Cerveau:
         zones_obst, d = self.obstacle(grille, detail=True)
         self._compteur_obst = self._compteur_obst + 1 if d is not None else 0
         confirme = d is not None and self._compteur_obst >= PERSISTANCE
-        if confirme and d < SEUIL_RECUL:
+        if confirme and d < SEUIL_ANIM:
             self.sens_rotation = self.cote_le_plus_libre(grille)
-            return self._passe("recule", "obstacle à %d mm (zones %s)" % (d, zones_obst),
-                               maintenant, -self.vitesse_recul, 0.0)
+            # Une animation est-elle assignée à « approche » (et le cooldown
+            # passé) ? Si oui, on la joue AVANT de reculer : on entre dans l'état
+            # « anime » (gait nul), qui enchaînera le recul au bout de DUREE_ANIM.
+            anim = self._anim_pour("approche", maintenant)
+            if anim is not None:
+                self.anim_a_jouer = anim
+                self._anim_derniere_a = maintenant
+                return self._passe("anime",
+                                   "obstacle à %d mm — animation « %s » avant recul"
+                                   % (d, anim), maintenant, 0.0, 0.0)
+            # Pas d'animation (aucune assignée, ou cooldown) : comportement
+            # historique — on ne recule que sous le seuil de recul.
+            if d < SEUIL_RECUL:
+                return self._passe("recule", "obstacle à %d mm (zones %s)" % (d, zones_obst),
+                                   maintenant, -self.vitesse_recul, 0.0)
 
         # 3ter. contournement en cours : on avance en braquant tant que l'objet
         #       reste à distance. Trois façons d'en sortir — la voie se dégage,
@@ -558,6 +704,14 @@ class Cerveau:
             if tourne_depuis > ROTATION_MAX:
                 self._rotation_depuis = None
                 self.sens_rotation = -self.sens_rotation
+                # Coincé pour de bon : si une animation est assignée à « bloque »,
+                # on la joue avant de reculer et de changer de sens.
+                anim = self._anim_pour("bloque", maintenant)
+                if anim is not None:
+                    self.anim_a_jouer = anim
+                    self._anim_derniere_a = maintenant
+                    return self._passe("anime", "coincé — animation « %s » puis recul"
+                                       % anim, maintenant, 0.0, 0.0)
                 return self._passe("recule", "rotation sans issue depuis %.0f s — "
                                              "on recule et on change de sens" % tourne_depuis,
                                    maintenant, -self.vitesse_recul, 0.0)
@@ -595,6 +749,14 @@ class Cerveau:
         if etat != "contourne":
             self._contourne_depuis = None
         if etat != self.etat:
+            # Fin d'une manœuvre d'évitement (retour à « avance ») : on prépare
+            # le départage des cas SYMÉTRIQUES de la prochaine manœuvre en
+            # l'alternant. Ainsi deux obstacles centrés successifs ne partent
+            # plus du même côté — c'est ce qui corrige le biais gauche. Le sens
+            # reste inchangé PENDANT la manœuvre (il n'est retouché qu'ici, au
+            # passage à « avance »), donc l'esquive ne tremble pas.
+            if etat == "avance" and self.etat in ("tourne", "contourne", "recule"):
+                self._sens_defaut_symetrie = -self._sens_defaut_symetrie
             self.depuis = maintenant
             self.historique.append((round(maintenant, 2), etat, motif))
         self.etat, self.motif = etat, motif
@@ -603,6 +765,104 @@ class Cerveau:
     def _fige(self, motif):
         self.etat, self.motif = "arret", motif
         return 0.0, 0.0, "arret", motif
+
+
+# ═══════════════════════ exécuteur d'animations (à bord) ═══════════════════════
+# Le Cerveau ne fait qu'ÉMETTRE une intention (self.anim_a_jouer). C'est ici
+# qu'elle est réellement jouée, dans un THREAD séparé : la boucle de décision à
+# 10 Hz se contente de déposer un nom dans une file et ne bloque jamais sur le
+# réseau.
+#
+# Pourquoi un WebSocket local et non ROS : il n'existe (au 28/07) aucune
+# interface ROS confirmée pour jouer une action ARBITRAIRE de la bibliothèque
+# avec une priorité. Le seul service, play_reset_action, ne joue que le
+# redressement. On passe donc par le pont web du robot (ws://127.0.0.1:8765),
+# avec le protocole confirmé — le même que le bouton Reset : play_motion avec
+# file_path + priority (≥5, sinon écrasé par le comportement autonome) + torque.
+ANIM_WS_URL = "ws://127.0.0.1:8765?audience=web"
+ANIM_BASE_PATH = "/root/material/actions"
+ANIM_PRIORITY = 5          # ≥5 : sinon l'action se fait écraser par l'autonome
+ANIM_TORQUE = 2047         # couple maxi, comme l'action de redressement officielle
+
+try:
+    import websocket as _ws_client      # paquet « websocket-client »
+except Exception:                        # absent : les animations sont désactivées,
+    _ws_client = None                    # mais la déambulation reste intacte
+
+
+class ExecuteurAnimation:
+    """Joue une action de la bibliothèque via le pont web LOCAL du robot.
+
+    `jouer(nom)` et `couper()` sont non bloquants : ils déposent une consigne
+    dans une file, un thread s'occupe du WebSocket (connexion paresseuse,
+    reconnexion au coup suivant en cas de coupure).
+    """
+
+    def __init__(self, logger, url=ANIM_WS_URL):
+        self.logger = logger
+        self.url = url
+        self.ws = None
+        self.actif = _ws_client is not None
+        self.q = queue.Queue(maxsize=4)
+        if not self.actif:
+            logger.warn("Paquet « websocket-client » absent : animations "
+                        "désactivées (pip install websocket-client). "
+                        "La déambulation fonctionne normalement, sans animation.")
+            return
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def jouer(self, nom):
+        if not self.actif or not nom:
+            return
+        try:
+            self.q.put_nowait(("play", nom))
+        except queue.Full:
+            pass
+
+    def couper(self):
+        """Interrompt l'action en cours et rend les moteurs à la démarche.
+
+        Envoyé en sortie de l'état « anime » (fin normale OU vide qui surgit) :
+        stop_all_motions coupe à la fois l'action et tout mouvement résiduel.
+        """
+        if not self.actif:
+            return
+        try:
+            while True:
+                self.q.get_nowait()          # on vide les play en attente
+        except queue.Empty:
+            pass
+        try:
+            self.q.put_nowait(("stop", None))
+        except queue.Full:
+            pass
+
+    def _run(self):
+        while True:
+            action, nom = self.q.get()
+            try:
+                if self.ws is None:
+                    self.ws = _ws_client.create_connection(self.url, timeout=3)
+                if action == "stop":
+                    self._envoie("stop_all_motions", {})
+                else:
+                    self._envoie("play_motion", {
+                        "file_path": "%s/%s.avi" % (ANIM_BASE_PATH, nom),
+                        "loop": False, "priority": ANIM_PRIORITY, "torque": ANIM_TORQUE})
+            except Exception as e:
+                # une coupure ferme le socket : on le rouvrira au prochain coup
+                try:
+                    if self.ws is not None:
+                        self.ws.close()
+                except Exception:
+                    pass
+                self.ws = None
+                self.logger.warn("animation « %s » non jouée : %s" % (nom, e))
+
+    def _envoie(self, request_type, data):
+        # play_motion répond « sending » tout de suite : on n'attend pas la fin.
+        self.ws.send(json.dumps({"type": "request", "request_type": request_type,
+                                 "request_id": uuid.uuid4().hex[:12], "data": data}))
 
 
 # ═══════════════════════════ service HTTP (à bord) ═══════════════════════════
@@ -615,12 +875,16 @@ def _lancer_service(noeud, port):
     être joignable depuis le PC du même réseau.
 
       GET  /etat                → instantané JSON (grille, décision, contexte)
+      GET  /animations          → mapping événement → animation courant
+      GET  /ecran/contenus      → animations disponibles sur l'écran (lottie, gif)
+      POST /ecran/toast         → message texte à l'écran
+      POST /ecran/lottie        → joue une animation Lottie
+      POST /ecran/gif           → joue un GIF
       POST /demarrer            → arme la marche (réapprend le sol en marchant)
       POST /arreter             → coupe la marche, consignes nulles
       POST /vitesse?v=0.4       → règle la consigne d'avance (0.05–1.0)
+      POST /animations          → règle le mapping (corps JSON {événement: action})
     """
-    import json
-    import threading
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     from urllib.parse import urlparse, parse_qs
 
@@ -646,10 +910,23 @@ def _lancer_service(noeud, port):
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
             self.end_headers()
 
+        def _lire_json(self):
+            n = int(self.headers.get("Content-Length") or 0)
+            if not n:
+                return {}
+            try:
+                return json.loads(self.rfile.read(n).decode("utf-8"))
+            except Exception:
+                return {}
+
         def do_GET(self):
             chemin = urlparse(self.path).path
             if chemin in ("/etat", "/"):
                 self._repond(200, noeud.instantane())
+            elif chemin == "/animations":
+                self._repond(200, {"animations": dict(noeud.cerveau.animations)})
+            elif chemin == "/ecran/contenus":
+                self._repond(200, noeud.ecran_contenus())
             else:
                 self._repond(404, {"erreur": "route inconnue"})
 
@@ -668,6 +945,13 @@ def _lancer_service(noeud, port):
                     self._repond(200, noeud.instantane())
                 except (TypeError, ValueError):
                     self._repond(422, {"erreur": "vitesse invalide"})
+            elif u.path == "/animations":
+                noeud.regle_animations(self._lire_json())
+                self._repond(200, {"animations": dict(noeud.cerveau.animations)})
+            elif u.path.startswith("/ecran/"):
+                quoi = u.path[len("/ecran/"):]
+                code, corps = noeud.ecran_commande(quoi, self._lire_json())
+                self._repond(code, corps)
             else:
                 self._repond(404, {"erreur": "route inconnue"})
 
@@ -697,6 +981,15 @@ def principal():
                          "PAS tant que « démarrer » n'a pas été demandé.")
     ap.add_argument("--port-service", type=int, default=8790,
                     help="port du serveur de service (défaut 8790)")
+    ap.add_argument("--animations", type=str, default=None,
+                    help='animations d\'évitement, JSON événement→action, ex : '
+                         '\'{"approche":"stand_default_peer_brief",'
+                         '"bloque":"stand_default_ponder_brief"}\'. Événements : '
+                         '« approche » (obstacle proche, jouée avant le recul) et '
+                         '« bloque » (coincé). Une action est jouée en priorité 5 '
+                         'via le pont web local ; nécessite le paquet '
+                         'websocket-client sur le robot. Réglable aussi en direct '
+                         'par POST /animations (Studio 360).')
     ap.add_argument("--apprendre-a-l-arret", action="store_true",
                     help="apprendre le fond robot immobile. DÉCONSEILLÉ en mode "
                          "--marche : les pattes avant entrent dans le bas du "
@@ -712,6 +1005,16 @@ def principal():
     #  simplifie tout : c'est exactement ce que l'enveloppe apprise en
     #  marchant sait absorber.)
     args = ap.parse_args()
+    # Le mapping d'animations peut venir de la ligne de commande (JSON) ; il est
+    # aussi réglable en direct via POST /animations. Un JSON invalide ne doit pas
+    # empêcher de déambuler : on le signale et on continue sans animation.
+    try:
+        args.animations = json.loads(args.animations) if args.animations else {}
+        if not isinstance(args.animations, dict):
+            raise ValueError("le JSON --animations doit être un objet")
+    except (ValueError, TypeError) as e:
+        print("⚠ --animations ignoré (%s) : déambulation sans animation." % e)
+        args.animations = {}
 
     import rclpy
     from rclpy.node import Node
@@ -724,7 +1027,28 @@ def principal():
     class Deambulation(Node):
         def __init__(self):
             super().__init__("deambulation")
-            self.cerveau = Cerveau(vitesse=args.vitesse, rotation=args.rotation)
+            self.cerveau = Cerveau(vitesse=args.vitesse, rotation=args.rotation,
+                                   animations=args.animations)
+            self.executeur_anim = ExecuteurAnimation(self.get_logger())
+            self._etait_anime = False
+            # ── écran de la tête ──────────────────────────────────────────
+            # lvgl_gui_node expose des SERVICES ROS (et non des topics) pour
+            # afficher du texte et jouer des animations. On les atteint donc
+            # depuis ce nœud embarqué : le helper, lui, ne parle que WebSocket.
+            # Import tolérant : si le paquet manque, la déambulation continue.
+            self.srv_ecran = {}
+            try:
+                from lvgl_ros2_gui.srv import PlayGif, PlayLottie, ShowToast
+                self.srv_ecran = {
+                    "gif": self.create_client(PlayGif, "/lvgl_gui_node/play_gif"),
+                    "lottie": self.create_client(PlayLottie, "/lvgl_gui_node/play_lottie"),
+                    "toast": self.create_client(ShowToast, "/lvgl_gui/show_toast"),
+                }
+                self._types_ecran = {"gif": PlayGif, "lottie": PlayLottie, "toast": ShowToast}
+                self.get_logger().info("Écran de la tête : services disponibles.")
+            except Exception as e:
+                self._types_ecran = {}
+                self.get_logger().warn("Écran de la tête indisponible (%s)." % e)
             self.grille = [None] * 16
             self.dernier_tof = 0.0
             self.batterie = None
@@ -817,7 +1141,9 @@ def principal():
             snap = dict(self.etat_courant)
             snap.update({"version": VERSION, "en_marche": bool(self.en_marche),
                          "sol_appris": bool(self.sol_appris),
-                         "vitesse": round(float(self.cerveau.vitesse), 3)})
+                         "vitesse": round(float(self.cerveau.vitesse), 3),
+                         "animations": dict(self.cerveau.animations),
+                         "animations_actives": bool(self.executeur_anim.actif)})
             return snap
 
         def demarrer(self):
@@ -832,6 +1158,8 @@ def principal():
         def arreter(self):
             """Coupe la marche et envoie plusieurs consignes nulles."""
             self.en_marche = False
+            self._etait_anime = False
+            self.executeur_anim.couper()   # interrompt une éventuelle animation
             for _ in range(5):
                 self.publie(0.0, 0.0)
                 time.sleep(0.02)
@@ -840,6 +1168,85 @@ def principal():
         def regle_vitesse(self, v):
             """Change la consigne d'avance (bornée 0.05–1.0)."""
             self.cerveau.vitesse = max(0.05, min(1.0, float(v)))
+
+        MATERIEL = "/root/material"
+
+        def ecran_contenus(self):
+            """Animations installées sur le robot (Lottie et GIF)."""
+            import os
+            def liste(sous, ext):
+                d = os.path.join(self.MATERIEL, sous)
+                try:
+                    return sorted(f for f in os.listdir(d) if f.lower().endswith(ext))
+                except OSError:
+                    return []
+            return {"lottie": liste("lottie", ".json"), "gif": liste("gif", ".gif"),
+                    "dossier": self.MATERIEL,
+                    "disponible": bool(self.srv_ecran)}
+
+        def _appelle_service(self, cle, requete, delai=4.0):
+            """Appel de service depuis le fil HTTP. Le nœud tourne (rclpy.spin)
+            dans le fil principal : on dépose la requête et on attend le
+            résultat, sans jamais faire tourner d'exécuteur ici."""
+            cli = self.srv_ecran.get(cle)
+            if cli is None:
+                return 503, {"erreur": "service d'écran indisponible sur ce robot"}
+            if not cli.wait_for_service(timeout_sec=1.5):
+                return 503, {"erreur": "le service %s ne répond pas" % cle}
+            fut = cli.call_async(requete)
+            t0 = time.monotonic()
+            while not fut.done() and time.monotonic() - t0 < delai:
+                time.sleep(0.02)
+            if not fut.done():
+                return 504, {"erreur": "délai dépassé"}
+            r = fut.result()
+            return 200, {"ok": bool(getattr(r, "success", True)),
+                         "message": getattr(r, "message", "")}
+
+        def ecran_commande(self, quoi, corps):
+            """toast | lottie | gif — voir les définitions de services ROS."""
+            corps = corps if isinstance(corps, dict) else {}
+            T = self._types_ecran
+            if quoi == "toast" and "toast" in T:
+                q = T["toast"].Request()
+                q.message = str(corps.get("message", ""))[:200]
+                q.type = int(corps.get("type", 0))          # 0 info … 3 erreur
+                q.position = int(corps.get("position", 1))  # 1 = centre
+                q.duration_ms = int(corps.get("duree_ms", 2500))
+                return self._appelle_service("toast", q)
+            if quoi == "lottie" and "lottie" in T:
+                q = T["lottie"].Request()
+                nom = str(corps.get("fichier", "")).strip().strip("/")
+                if not nom:
+                    return 422, {"erreur": "fichier manquant"}
+                q.file_path = nom if nom.startswith("/") else "%s/lottie/%s" % (self.MATERIEL, nom)
+                q.x = int(corps.get("x", -1)); q.y = int(corps.get("y", -1))
+                q.width = int(corps.get("largeur", 0)); q.height = int(corps.get("hauteur", 0))
+                q.loop = bool(corps.get("boucle", False))
+                q.bg_color = int(corps.get("fond", 0))
+                q.bg_opacity = int(corps.get("opacite", 0))
+                q.hide_eye_layer = bool(corps.get("masquer_yeux", False))
+                return self._appelle_service("lottie", q)
+            if quoi == "gif" and "gif" in T:
+                q = T["gif"].Request()
+                nom = str(corps.get("fichier", "")).strip().strip("/")
+                if not nom:
+                    return 422, {"erreur": "fichier manquant"}
+                q.file_name = nom
+                q.absolute_path = ""
+                q.x = int(corps.get("x", -1)); q.y = int(corps.get("y", -1))
+                q.width = int(corps.get("largeur", 0)); q.height = int(corps.get("hauteur", 0))
+                q.loop_count = int(corps.get("boucles", 1))
+                q.hide_eye_layer = bool(corps.get("masquer_yeux", False))
+                return self._appelle_service("gif", q)
+            return 404, {"erreur": "commande d'écran inconnue : %s" % quoi}
+
+        def regle_animations(self, maj):
+            """Met à jour le mapping événement→animation (fusion). Une valeur
+            vide (None/"") retire l'animation de l'événement."""
+            if isinstance(maj, dict):
+                for cle, val in maj.items():
+                    self.cerveau.animations[str(cle)] = (val or None)
 
         def boucle(self):
             maintenant = time.monotonic()
@@ -930,6 +1337,21 @@ def principal():
                 "posture": self.posture,
             }
             vx, wz, etat, motif = self.cerveau.decide(self.grille, maintenant, contexte)
+
+            # --- exécution de l'INTENTION d'animation émise par le Cerveau ------
+            # On ne joue rien en observation (comme publie() ne publie rien) : il
+            # faut la marche armée. L'état « anime » impose vx=wz=0, donc publie()
+            # met la démarche à 0 AVANT que l'action prenne la main sur les
+            # moteurs. À la SORTIE de « anime » (fin normale, ou vide qui a forcé
+            # le recul en amont), on coupe l'action pour rendre les moteurs à la
+            # démarche/au recul.
+            if self.en_marche and self.cerveau.anim_a_jouer:
+                self.executeur_anim.jouer(self.cerveau.anim_a_jouer)
+            self.cerveau.anim_a_jouer = None
+            if self.en_marche and self._etait_anime and etat != "anime":
+                self.executeur_anim.couper()
+            self._etait_anime = (etat == "anime")
+
             self.publie(vx, wz)
             self.etat_courant.update({"etat": etat, "motif": motif,
                                       "vx": round(float(vx), 3), "wz": round(float(wz), 3)})

@@ -9,8 +9,8 @@
       "deduit": "déduit du firmware ou du comportement, non confirmé",
       "a_confirmer": "hypothèse de travail, ne pas publier comme un fait"
     },
-    "revision_dossier": "r16",
-    "revision_dossier_date": "2026-07-27",
+    "revision_dossier": "r19",
+    "revision_dossier_date": "2026-07-28",
     "nouveautes_r3": "statut du firmware passé à vérifié (2.5.0 bêta du 23/07) ; changelog_public corrigé ; nouveaux blocs changelog_firmware, console_constructeur, canaux_ota ; outil_pilotage en v2.4.",
     "nouveautes_r4": "correction du réveil à distance (il est possible) ; outil en v2.5 avec la correction de cache.",
     "nouveautes_r5": "réponses aux questions d'intégration (§10) ; exception du premier réveil après mise sous tension ; annexe rapport_capteurs ; outil en v2.6.",
@@ -20,7 +20,10 @@
     "nouveautes_r13": "retours d'intégration : §5 de la passerelle complété (captures 11 à 19 décrites, avec leurs réserves — dont 14_thermique_sondes_actives = simulateur, et 16_connexion_marque affiche v2.7) ; §4 clarifié (un seul lien de téléchargement en ligne, la v2.8.1) ; LISEZMOI corrigé (forme courte « Studio 360 », arborescence complétée : CHANGELOG dans annexes/ et images jusqu'à 20). Aucun changement d'outil.",
     "nouveautes_r14": "publication de la v2.8.2 : nouvel onglet « Déambulation » dans l'outil (champ ToF 4x4 en direct, décision du nœud, vidéo, Démarrer/Arrêter/vitesse). Le nœud de déambulation lui-même (deambulation.py, v13, réponse graduée contournement/pivot/recul) N'EST PAS publié : sa détection de vide n'a jamais été éprouvée au bord d'une table. Nouvelle capture 21_deambulation.png (vraie caméra + vraies distances).",
     "nouveautes_r15": "le kit passe en v2.8.3 et EMBARQUE le nœud de déambulation (deambulation.py) : l'onglet devient pleinement utilisable par un tiers. Condition d'usage reprise partout — SOL PLAT uniquement, jamais sur une table ni près d'un escalier ou d'un bord ; la détection de vide n'a jamais été éprouvée au bord d'un vrai dénivelé. Au lancement le nœud n'agit pas : il observe, et ne marche que sur Démarrer.",
-    "nouveautes_r16": "correction signalée par l'intégration : le bloc racine « deambulation » était resté en version 12 / statut a_confirmer, alors que le nœud publié est en v13. Bloc réécrit et mis en cohérence — version et itérations à 13, statut « verifie », et surtout deux champs séparés : ce_qui_est_verifie (le nœud marche et esquive sur le robot, service HTTP vérifié de bout en bout) et ce_qui_ne_l_est_pas (détection de vide jamais éprouvée au bord d'un dénivelé ; comportement gradué de la v13 validé hors ligne seulement ; angle mort du masque entre 170 et 225 mm). Aucun changement d'outil : le kit reste en v2.8.3."
+    "nouveautes_r16": "correction signalée par l'intégration : le bloc racine « deambulation » était resté en version 12 / statut a_confirmer, alors que le nœud publié est en v13. Bloc réécrit et mis en cohérence — version et itérations à 13, statut « verifie », et surtout deux champs séparés : ce_qui_est_verifie (le nœud marche et esquive sur le robot, service HTTP vérifié de bout en bout) et ce_qui_ne_l_est_pas (détection de vide jamais éprouvée au bord d'un dénivelé ; comportement gradué de la v13 validé hors ligne seulement ; angle mort du masque entre 170 et 225 mm). Aucun changement d'outil : le kit reste en v2.8.3.",
+    "nouveautes_r17": "nouvel outil interne verif_coherence.py, à côté de verif_secrets.py : il refuse une livraison où le dossier se contredit (bandeaux de révision divergents, §4 calé sur une version périmée, taille ou empreinte ne décrivant plus le fichier réel, copie docs/ oubliée, image citée mais absente, numéro du nœud ne suivant plus le code). Né des quatre erreurs livrées le 27/07. Aucun changement de contenu publiable : le kit reste en v2.8.3.",
+    "nouveautes_r18": "capture des trames RÉELLES de l'interface officielle Hengbot (WebSocket 8765) le 28/07 : le VOLUME est le paramètre ROS audio_volume (entier 0-100) du nœud wmix_audio_player_node, réglé par USER_SET_NODE_PARAMETER {node_name, parameter_name, parameter_value} — nouveau bloc racine 'audio', statut verifie. Format ACTION_PLAY confirmé {file_path, loop, priority, torque}. Lectures OTA_* / LIFECYCLE_GET_STATES / GET_AI_STATE / USER_GET_LANGUAGE et battement ping relevés (voir API_REELLE §2.2). Section 'sommeil' enrichie : le couchage périodique sous Autonomous Mode = arousal qui décroît vers ~3/100 → emotion_state sleeping → action lie_sleep_idle. Côté outil : nouvelles fonctions volume, yeux (UDP 8770), marche pas-à-pas, tableau de bord Vie & Système, éditeur d'enchaînements ; pages reliées par une navigation commune.",
+    "nouveautes_r19": "enquête menée SUR LE ROBOT (SSH, firmware 2.5.0) sur le pilotage de l'écran et des yeux. Conclusion NÉGATIVE mais démontrée : un seul port UDP écoute (8768, user_interface_udp_server_node) ; les ports 8770/8769/8772 du script Blender ne sont pas ouverts. Le serveur comprend bien les clés eye_iris/eye_upper/eye_lower et les republie sur le topic /lvgl_layer — mais ros2 topic info donne « Subscription count: 0 » et lvgl_gui_node ne s'y abonne pas : le canal est ORPHELIN, les yeux ne sont pas pilotables de l'extérieur sur ce firmware. En contrepartie, ce canal UDP 8768 publie cmd_vel, body_pose, head_quaternion, les 4 points de pattes et surtout /robot_led_controller/led_colors (LED, aucun autre accès connu). L'écran reste pilotable par services ROS (play_lottie, play_gif, show_toast, show_dialog). À sonder : /emotion_manager/set_emotion_state existe en ROS alors que la commande WebSocket équivalente répond service_unavailable. Kit régénéré en v2.8.4 (249 949 o) avec disclaimer d'usage explicite ; nœud de déambulation en v15."
   },
   "materiel": {
     "modele": "Hengbot Sirius",
@@ -309,10 +312,10 @@
   },
   "deambulation": {
     "fichier": "deambulation.py — fourni dans le kit depuis la v2.8.3 ; à déposer sur le robot (scp) puis lancer avec --service",
-    "version": 13,
+    "version": 15,
     "ou_ca_tourne": "à bord du robot (le ToF n'existe que sur ROS, pas sur le WebSocket)",
     "principe": "apprentissage du décor en marchant sous forme d'enveloppe min/max par zone, puis réaction aux seuls écarts",
-    "iterations": 13,
+    "iterations": 15,
     "tests_hors_ligne": 34,
     "reponse_graduee": "Depuis la v13 la réponse est graduée : au-delà de 300 mm il ESQUIVE en continuant d'avancer, en braquant du côté le moins encombré (comparaison de l'encombrement cumulé à gauche et à droite, réévaluée à chaque cycle) ; en dessous de 300 mm il pivote sur place ; il ne RECULE qu'en dessous de 200 mm, ou s'il est coincé. Le recul est aveugle — le robot ne voit rien derrière lui — d'où cette gradation.",
     "service_http": "En mode --service, le nœud expose sur le port 8790 la grille ToF, sa décision et son motif, et accepte démarrer / arrêter / vitesse. C'est ce que l'onglet « Déambulation » de Studio 360 affiche et commande, via un passe-plat du pont.",
@@ -433,11 +436,11 @@
     "renommage": "Renommé le 26/07/2026, en vigueur à partir de la v2.7 : « Sirius Studio » se confondait avec l'application OFFICIELLE de Hengbot. Les archives déjà diffusées (SiriusStudio_v1.9 à SiriusStudio_v2.6) gardent leur nom de fichier et leurs liens — aucun lien de téléchargement n'est cassé. Les noms de fichiers de code, les routes et les commandes réseau sont inchangés.",
     "mention_independance_fr": "Studio 360 pour Sirius (Studio 360) est un projet indépendant d'explorations360, sans lien ni affiliation avec Hengbot. Sirius et Hengbot sont des marques de leurs propriétaires respectifs. Ce kit est le fruit d'un travail de rétro-ingénierie de l'API du robot : il n'est ni fourni, ni approuvé, ni soutenu par le constructeur.",
     "mention_independance_en": "Studio 360 for Sirius (Studio 360) is an independent project by explorations360 — not affiliated with, endorsed by, or supported by Hengbot. Sirius and Hengbot are trademarks of their respective owners. This kit was reconstructed by reverse-engineering the robot's API; it is neither supplied nor approved by the manufacturer.",
-    "version_publiable": "2.8.3",
-    "fichier": "Studio360_pour_Sirius_v2.8.3.zip",
-    "taille_octets": 203022,
-    "taille_lisible": "198 Ko",
-    "sha256": "c50b9eaba700c5a166779f3c43964cd3ef9624c275e47be64deb5aa53b22ba94",
+    "version_publiable": "2.8.4",
+    "fichier": "Studio360_pour_Sirius_v2.8.4.zip",
+    "taille_octets": 249949,
+    "taille_lisible": "244 Ko",
+    "sha256": "ad7fd292a470436cbc204f016a540f96c40285fa6aaa074dfc504993741c11fe",
     "archives_anciennes": "SiriusStudio_v1.9 à SiriusStudio_v2.6 gardent leur nom de fichier et leurs liens (v2.6 = 129 Ko, SHA eb6fcd75…dfd2a4). Les Studio360_pour_Sirius v2.7 et v2.8 restent aussi à côté ; la v2.8.1 est la version courante. Aucun lien diffusé n'est cassé.",
     "plateforme": "Windows (lanceurs .bat ; le pont Python est multiplateforme mais non testé ailleurs)",
     "prerequis": "Python 3 avec « Add Python to PATH » ; robot sur le même réseau Wi-Fi ; navigateur récent (WebRTC)",
@@ -449,7 +452,7 @@
     "nouveautes_2_3": "interface bilingue FR/EN ; le bouton de posture s'appelle « Couché » (EN : Lying down) au lieu de « Au sol », pour ne plus le confondre avec le mode Sol/Bureau (EN : Ground/Desktop) qui est l'environnement du robot",
     "nouveautes_2_5": "le pont envoie des en-têtes de cache explicites (no-store sur le HTML, immutable sur les fichiers hachés) : après une mise à jour, le navigateur ne peut plus servir l'ancienne interface tout en affichant le nouveau numéro de version.",
     "nouveautes_2_6": "posture réelle reflétée dans le sélecteur (déduite de l'action jouée, marquée comme telle, rien d'affiché tant qu'on ne sait pas) ; barre du haut qui ne déborde plus sous 1280 px ; animation de connexion jouée avant la bascule de page, 1,8 s.",
-    "version_courante": "2.8.3",
+    "version_courante": "2.8.4",
     "nouveautes_2_7": "nouvel onglet « Système » (vision : détection + suivi de visage et compteurs temps réel ; thermique : température batterie affichée, 4 sondes moteurs déclarées muettes, température CPU déclarée non disponible avec sa raison ; charge des 14 moteurs et coupe-circuit ; métriques système) ; l'interrupteur autonome de la barre du haut est désormais relié à la vraie route POST /api/modes/autonomous ; renommage du produit en Studio 360.",
     "statut_2_7": "empaquetée et publiée dans telechargement/ (archive reconstruite le 26/07 à partir des fichiers assainis de la v2.6, cf. JOURNAL r9)",
     "nouveautes_2_8": "l'interface s'installe sur un téléphone (manifeste, icônes 192/512/maskable, icône Apple, plein écran iOS) ; thème posé avant le premier rendu, bouton sombre → clair → système, suivi à chaud du jour/nuit de la machine, plus de flash clair au chargement ; corrections de débordement en largeur téléphone. Le pincement pour zoomer reste actif, par choix d'accessibilité.",
@@ -459,10 +462,10 @@
     "nouveautes_2_8_2": "nouvel onglet « Déambulation » : le champ du capteur ToF (grille 4x4, 16 distances en mm) en direct, la décision du nœud embarqué et son motif, la vue caméra, et les commandes Démarrer / Arrêter / vitesse. La page fonctionne aussi seule sur /deambulation.",
     "statut_2_8_2": "empaquetée et publiée ; remplacée par la v2.8.3",
     "nouveautes_2_8_3": "le nœud de déambulation (deambulation.py) est désormais fourni avec le kit : une ligne de scp le dépose sur le robot et l'onglet devient pleinement utilisable. Message d'aide de la page revu quand le nœud n'est pas déposé.",
-    "statut_2_8_3": "empaquetée et publiée dans telechargement/ — version courante",
+    "statut_2_8_3": "empaquetée et publiée ; remplacée par la v2.8.4",
     "deambulation_noeud": "L'onglet a besoin du nœud deambulation.py, qui tourne À BORD du robot (le capteur ToF n'existe que sur ROS, pas sur le WebSocket). Depuis la v2.8.3 ce nœud EST fourni avec le kit : scp deambulation.py root@<IP_DU_ROBOT>:/root/ puis python3 /root/deambulation.py --service. Tant qu'il n'est pas déposé, l'onglet s'affiche et explique la marche à suivre.",
     "deambulation_conditions": "SOL PLAT UNIQUEMENT — jamais sur une table, un plan de travail ou un lit, jamais près d'un escalier, d'une marche ou d'un bord. Le robot voit les obstacles devant lui et sait en principe voir le vide, mais cette détection du vide N'A JAMAIS ÉTÉ ÉPROUVÉE au bord d'un vrai dénivelé : ne pas compter dessus. Il ne voit rien derrière lui. Au lancement il n'agit pas (observation) ; il ne marche que sur Démarrer, et Échap ou Espace l'arrêtent.",
-    "deambulation_noeud_version": "13 — réponse graduée : esquive en marche au-delà de 300 mm, pivot sur place en dessous, recul en dernier recours ou si coincé. 34 tests sur trames réelles.",
+    "deambulation_noeud_version": "15 — animation optionnelle jouée à l'approche d'un obstacle avant le recul, recul sur détection de vide désormais borné, et fin du biais gauche à l'évitement. 44 tests sur trames réelles.",
     "deambulation_taille_lisible_v2_8_2": "181 Ko",
     "mode_reseau_securite": "Le mode téléphone (demarrer_telephone.bat / --host 0.0.0.0) rend le pilotage du robot accessible à tout le réseau Wi-Fi, SANS authentification : à réserver à un réseau de confiance. Le mode PC par défaut (demarrer.bat) n'écoute que 127.0.0.1 et n'expose rien. Le coupe-circuit reste actif dans les deux cas.",
     "reserves_2_7": {
@@ -474,7 +477,11 @@
       "temperature_cpu": "Aucune température CPU sur le WebSocket 8765 ni sur le REST 8088. Seule source connue : le topic ROS /fan_breathing/cpu_temp, non ponté vers le monde WebSocket. /api/system renvoie toujours cpu: null — un trou assumé plutôt qu'un chiffre inventé.",
       "sondes_moteurs": "Les 4 sondes de patte renvoient 0 sur ce firmware : sondes muettes, valeur transmise brute.",
       "statut": "a_confirmer"
-    }
+    },
+    "statut_2_8_4": "empaquetée et publiée dans telechargement/ — version courante",
+    "nouveautes_2_8_4": "les nouveaux outils deviennent des ONGLETS de l'interface principale (Dashboard · Système · Vie du robot · Actions · Enchaînements · Pilotage · Déambulation). « Vie du robot » : humeur (plaisir/éveil/satiété/fatigue), VOLUME audio, LED (2 tête + 6 corps), ÉCRAN de la tête (texte et animations de la bibliothèque), batterie, réseau, charge des 14 moteurs, interactions tactiles, journaux, mémoire IA. « Enchaînements » : éditeur de suites d'animations avec groupes à tirage aléatoire, pauses et blocs d'errance. « Déambulation » refondue en 3 colonnes avec marche pas-à-pas et bouton Réveil/Debout. Nouveau lanceur deambulation_robot.bat. Correctifs : bouton Recentrer de la tête qui commande enfin le robot, et fin d'une interrogation en boucle qui saturait le pont quand le nœud embarqué n'est pas lancé.",
+    "interface_patchee_a_la_main": "⚠ Le dossier ui/ du kit est un build patché à la main (ajout des onglets Vie du robot / Enchaînements, réordonnancement du menu, bouton Recentrer réellement câblé, libellé « Orientation » du bloc tête/corps). Un rebuild du frontend depuis les sources écraserait ces modifications : elles sont à réappliquer.",
+    "conditions_d_usage": "Kit destiné à des personnes qui savent coder et qui savent ce qu'elles font. Fourni tel quel, SANS ASSISTANCE ET SANS GARANTIE : personne ne s'engage à répondre, à corriger, ni à maintenir la compatibilité avec les firmwares futurs. Il pilote un robot réel (moteurs, marche, chutes possibles), n'a aucune authentification, et expose des commandes issues de rétro-ingénierie dont certaines sont marquées non vérifiées. L'utilisateur est seul responsable de sa machine et de son environnement."
   },
   "changelog_firmware": [
     {
@@ -590,8 +597,18 @@
       "Node Management"
     ]
   },
+  "audio": {
+    "statut": "verifie",
+    "volume": "Le volume est le paramètre ROS 'audio_volume' (entier 0-100) du nœud 'wmix_audio_player_node'. On le règle par la commande WebSocket USER_SET_NODE_PARAMETER, charge utile {node_name: \"wmix_audio_player_node\", parameter_name: \"audio_volume\", parameter_value: <0-100>}.",
+    "preuve": "trame capturée le 28/07 sur l'interface officielle Hengbot (WebSocket 8765) en écoutant les messages sortants pendant qu'on bougeait le curseur de volume, valeur relevée 54.",
+    "mecanisme_generique": "USER_SET_NODE_PARAMETER ouvre le réglage de n'importe quel paramètre ROS exposé par un nœud (node_name / parameter_name / parameter_value) — piste pour d'autres réglages.",
+    "aperçu_sonore": "Sur l'interface officielle, changer le volume joue en aperçu l'action ACTION_PLAY /root/material/actions/stand_default_littleBark_brief.avi (priority 3, torque 2047) : le robot se lève et aboie brièvement. Ce n'est pas un dysfonctionnement.",
+    "expose_dans_l_outil": "Studio 360 v2.8.2+ : POST /api/volume {value:0-100} et un curseur dans le tableau de bord Vie & Système.",
+    "lecture": "GET symétrique présumé USER_GET_NODE_PARAMETER {node_name, parameter_name} — non capturé, à confirmer."
+  },
   "sommeil": {
     "etat": "emotion_state = \"sleeping\", arousal proche de 0, le robot s'accroupit",
+    "trace_couchage_28_07": "Capturé en direct sur le flux emotion-update (Autonomous Mode actif) : emotion_state \"sleeping\", valence_value 50, fatigue_status 0, et arousal_value ≈ 3/100 qui DÉCROÎT à chaque trame. En parallèle le moteur de comportement joue en boucle l'action idle 'lie_sleep_idle'. Mécanique du couchage périodique : l'éveil décroît avec le temps → état sleeping → lie_sleep_idle (le robot se couche) ; une stimulation (aboiement, toucher, son) remonte l'éveil et il se relève, puis l'éveil redescend et il se recouche. Pour le garder debout : couper Autonomous Mode ou utiliser le bouton Debout (pause de l'autonome + returnPosition tenu).",
     "reveil_a_distance": "OUI — jouer l'action de redressement : ACTION_PLAY {file_path: /root/material/actions/stand_default_returnPosition_brief.avi, priority: 5, torque: 2047}",
     "statut": "verifie",
     "ce_qui_n_est_pas_pilotable": "l'état émotionnel lui-même : EMOTION_SET_STATE répond service_unavailable, EMOTION_INTERACTION refuse tous les types tentés (touch_tap, touch, pet, dog_bone)",
@@ -610,5 +627,29 @@
       "que emotion_state quitte réellement 'sleeping' après le redressement",
       "la déduction automatique de posture du helper (suivi du comportement autonome) : éprouvée sur simulateur seulement"
     ]
+  },
+  "ecran_et_yeux": {
+    "statut": "verifie",
+    "conclusion": "Les yeux NE SONT PAS pilotables depuis l'extérieur sur le firmware 2.5.0.",
+    "preuve": "ros2 topic info /lvgl_layer → Publisher count: 2, Subscription count: 0. Le serveur UDP (user_interface_udp_server_node, port 8768) reçoit et republie bien les clés eye_iris / eye_upper / eye_lower — présentes dans son binaire — mais aucun nœud ne consomme ce topic, et lvgl_gui_node ne figure pas parmi ses abonnés.",
+    "ports_udp": "Un SEUL port en écoute : 8768. Les ports 8770 (face_ui), 8769 (overlay) et 8772 (set_weight_params) du script Blender du constructeur ne sont pas ouverts. L'UDP ne signalant jamais un port fermé, les trames envoyées ailleurs disparaissent en silence.",
+    "valeurs_neutres_du_rig": "relevées dans blender_export_addon : eye_upper = -32, eye_lower = 63 (positions en mm, signe de Z inversé par rapport à Blender).",
+    "ou_vivent_les_yeux": "L'add-on d'export embarque les données d'yeux DANS les fichiers d'action (.avi) : l'écran est animé par le lecteur d'actions et le moteur d'émotion, pas par une commande externe.",
+    "ce_qui_pilote_l_ecran": "services ROS actifs : /lvgl_gui_node/play_lottie, /play_gif, /lvgl_gui/show_toast, /show_dialog, /show_ip_address, /camera_display/toggle.",
+    "piste_ouverte": "/emotion_manager/set_emotion_state, /adjust_emotion et /adjust_satiety existent en ROS — à tester, la voie ROS pourrait rendre l'humeur commandable contrairement au WebSocket qui répond service_unavailable."
+  },
+  "canal_udp_8768": {
+    "statut": "verifie",
+    "description": "Voie UDP parallèle au WebSocket, tenue par user_interface_udp_server_node sur le port 8768 (le seul ouvert). Utilisée par le script Blender du constructeur pour la prévisualisation en direct.",
+    "topics_publies": [
+      "/gait_generation_trot/cmd_vel (marche)",
+      "/kinematics/ik_subscriber/body_pose (assiette)",
+      "/kinematics/ik_subscriber/head_quaternion (tête)",
+      "/kinematics/ik_subscriber/{left,right}_{front,back}_point (pattes)",
+      "/robot_led_controller/led_colors (LED — aucun autre accès connu)",
+      "/lvgl_layer (écran/yeux — orphelin, voir ecran_et_yeux)",
+      "/udp_server/status"
+    ],
+    "interet": "Seule voie connue vers les LED, et accès direct à la tête et aux pattes sans passer par le WebSocket. Piste pour un contrôle fin des poses."
   }
 }

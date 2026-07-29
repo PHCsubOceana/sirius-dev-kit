@@ -8,6 +8,27 @@ indépendant*.
 > respectifs. Ce kit est le fruit d'un travail de rétro-ingénierie de l'API du
 > robot : il n'est ni fourni, ni approuvé, ni soutenu par le constructeur.
 
+> ## ⚠️ À qui s'adresse ce kit — à lire avant de commencer
+>
+> **Cet outil s'adresse à des personnes qui savent coder et qui savent ce
+> qu'elles font.** Il pilote un robot réel : des moteurs qui bougent, un
+> appareil qui marche, se lève et peut tomber. Il ne comporte aucun
+> garde-fou parental, aucune authentification, et il expose des commandes
+> issues de rétro-ingénierie que le constructeur ne documente pas.
+>
+> **Fourni tel quel, sans assistance et sans garantie d'aucune sorte.**
+> Personne ne s'engage à répondre à une question, à corriger un défaut, ni à
+> maintenir la compatibilité avec les futurs firmwares. Certaines commandes
+> sont marquées « non vérifiées » : elles peuvent ne rien faire, ou faire
+> autre chose que ce qu'on croit.
+>
+> **Vous êtes seul responsable de votre robot, de son environnement et de ce
+> qui pourrait être endommagé.** Utilisez-le sur un sol plat et dégagé, en
+> restant à portée de main, et n'exécutez pas une commande dont vous ne
+> comprenez pas l'effet. Si ces conditions ne vous conviennent pas, ne
+> l'utilisez pas.
+
+
 *L'outil s'appelait « Sirius Studio » jusqu'à la v2.6 ; renommé à la v2.7 pour
 ne plus se confondre avec l'application officielle du constructeur. Les archives
 déjà diffusées gardent leur nom de fichier.*
@@ -253,6 +274,59 @@ ecran_tete.sh                diagnostic de l'écran de la tête (avancé, SSH)
 ```
 
 ---
+
+## Nouveautés de la v2.8.4
+
+**Les nouveaux outils sont des onglets de l'interface principale** — plus rien
+à ouvrir à part. Ordre du menu : Dashboard · Système · Vie du robot · Actions ·
+Enchaînements · Pilotage · Déambulation.
+
+- **Vie du robot** — tableau de bord : humeur du robot (plaisir, éveil,
+  satiété, fatigue), **volume audio**, **LED** (2 à la tête, 6 sur le corps),
+  **écran de la tête** (message texte et animations de sa bibliothèque),
+  batterie, réseau, charge des 14 moteurs, interactions tactiles, journaux,
+  réinitialisation de la mémoire du dialogue IA.
+- **Enchaînements** — éditeur « Play Blocks » : animations, groupes à tirage
+  aléatoire, pauses et blocs d'errance mis bout à bout, en boucle ou non ;
+  sauvegarde sur le PC, export/import JSON.
+- **Déambulation** — refondue en trois colonnes (voir / mesurer / agir), avec
+  **marche pas-à-pas** (déplacements bornés en foulées), bouton **Réveil /
+  Debout** et caméra à la demande.
+- **`deambulation_robot.bat`** — dépose le nœud sur le robot et lance son
+  service avec le bon environnement ROS, en un double-clic.
+- Correctifs : fin du biais gauche à l'évitement, recul sur détection de vide
+  désormais borné, bouton « Recentrer » de la tête qui commande réellement le
+  robot, et suppression d'une interrogation en boucle qui saturait le pont.
+
+⚠️ **L'interface (`ui/`) est un build patché à la main** pour ajouter ces
+onglets et deux correctifs. Un futur rebuild du frontend depuis les sources
+écraserait ces modifications : il faudra les réappliquer.
+
+
+Cette version ajoute plusieurs modules, tous reliés par une **navigation commune**
+en haut de chaque page. Point d'entrée : **`/accueil`** (ouvre depuis n'importe
+quelle page via le menu « Accueil »).
+
+- **Accueil** (`/accueil`) — un hub avec une tuile par module.
+- **Enchaînements** (`/enchainements`) — éditeur « Play Blocks » : on place des
+  animations, des groupes (tirage aléatoire), des pauses et des blocs
+  « auto-wander » les uns après les autres, puis on lance le cycle (en boucle ou
+  arrêt en fin de cycle). Les enchaînements se sauvegardent sur le PC (via le
+  helper) avec repli navigateur et export/import JSON.
+- **Yeux** (`/yeux`) — contrôleur du regard (direction, dilatation, rotation,
+  clignement) et expressions prédéfinies, avec aperçu à l'écran. Voie UDP 8770.
+  ⚠ effet sur l'écran du robot non encore éprouvé.
+- **Vie & Système** (`/tableau`) — tableau de bord : humeur (valence/éveil/
+  satiété/fatigue), **volume audio**, batterie, réseau, charge par moteur (14),
+  interactions tactiles, journaux, réinitialisation de la mémoire du dialogue.
+- **Déambulation** — deux ajouts : bouton **Réveil / Debout** (réveille et fige
+  le robot debout : mode sol + autonome en pause + redressement tenu — utile au
+  premier démarrage), et **marche pas-à-pas** (déplacements bornés en foulées).
+- **Volume audio** — réglable de 0 à 100 (paramètre `audio_volume` du nœud
+  `wmix_audio_player_node`, commande vérifiée sur l'interface officielle).
+- Correctifs du nœud de déambulation (v15) : fin du biais gauche à l'évitement,
+  recul déclenché par un vide désormais borné, et animation optionnelle jouée à
+  l'approche d'un obstacle avant le recul.
 
 ## En cas de souci
 

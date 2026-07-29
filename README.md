@@ -12,6 +12,22 @@ Everything here was verified against a physical robot. Where it wasn't, it says 
 > respective owners. This kit was reconstructed by reverse-engineering the
 > robot's API; it is neither supplied nor approved by the manufacturer.
 
+> ## ⚠️ Who this kit is for
+>
+> **People who can code and know what they are doing.** This is not a consumer
+> product: it drives a real robot — motors, a machine that walks, stands up and
+> can fall over — has **no authentication** and no safety rails, and exposes
+> commands obtained by reverse-engineering that the manufacturer does not
+> document.
+>
+> **Provided as is, with no support and no warranty of any kind.** Nobody
+> undertakes to answer questions, fix defects, or keep compatibility with future
+> firmware. Claims marked "deduced" or "to be confirmed" may simply be wrong.
+>
+> **You alone are responsible for your robot, its surroundings and any damage.**
+> Do not run a command whose effect you do not understand. If these terms do not
+> suit you, do not use this kit.
+
 🇫🇷 [Version française](README.fr.md) · Full technical reference:
 [`docs/sirius-api-fr.md`](docs/sirius-api-fr.md) (French)
 

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yeux — Studio 360</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+  :root {
+    color-scheme: dark;
+    --plane:#0b0d10; --surface-1:#141619; --surface-2:#1c2026; --surface-3:#232830;
+    --text-primary:#fff; --text-secondary:#b4bcc8; --text-muted:#7d8794;
+    --border:#ffffff17; --border-strong:#ffffff29;
+    --accent:#22d3ee; --accent-fill:#18a5c4; --accent-soft:#22d3ee1f;
+    --good:#0ca30c; --warning:#fab219; --critical:#d03b3b;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --plane:#f2f4f6; --surface-1:#fcfcfb; --surface-2:#f1f2f4; --surface-3:#e7e9ec;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#6b7280;
+    --border:#0b0b0b1c; --border-strong:#0b0b0b33;
+    --accent:#0891b2; --accent-fill:#0891b2; --accent-soft:#0891b21a;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--plane); color:var(--text-primary);
+         font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+           padding:14px 18px; background:var(--surface-1); border-bottom:1px solid var(--border); }
+  .logo { width:34px;height:34px;border-radius:9px;background:var(--accent-soft);
+          display:grid;place-items:center;color:var(--accent);flex:none; }
+  h1 { font-size:17px; margin:0; font-weight:650; }
+  .sub { color:var(--text-muted); font-size:12px; }
+  .spacer { flex:1 1 auto; }
+  a.link { color:var(--accent); text-decoration:none; font-size:13px; font-weight:600; margin-left:4px; }
+  a.link:hover { text-decoration:underline; }
+  .chip { display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+          background:var(--surface-2);border:1px solid var(--border);font-size:13px;color:var(--text-secondary); }
+  .dot { width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex:none; }
+  main { padding:16px; max-width:1000px; margin:0 auto; }
+  .banner { display:flex;gap:11px;align-items:flex-start;padding:12px 14px;border-radius:11px;
+            background:color-mix(in srgb, var(--warning) 12%, var(--surface-1));
+            border:1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+            margin-bottom:16px; font-size:13.5px; color:var(--text-secondary); }
+  .banner b { color:var(--text-primary); } .banner .ico { color:var(--warning); flex:none; }
+  .cols { display:grid; grid-template-columns:320px 1fr; gap:16px; align-items:start; }
+  @media (max-width:820px){ .cols{ grid-template-columns:1fr; } }
+  .card { background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:16px; }
+  .card h2 { font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);
+             margin:0 0 12px;font-weight:600; }
+  button { font:inherit;font-weight:600;border-radius:10px;cursor:pointer;padding:9px 14px;
+           border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-primary);min-height:40px; }
+  button:hover:not(:disabled){ background:var(--surface-3); }
+  button.primary { background:var(--accent-fill);border-color:transparent;color:#04161b; }
+  .presets { display:flex;gap:8px;flex-wrap:wrap; }
+  .presets button { min-height:36px;padding:7px 12px; }
+  .sliderrow { display:flex;align-items:center;gap:10px;margin:10px 0; }
+  .sliderrow label { min-width:92px;font-size:13px;color:var(--text-secondary); }
+  .sliderrow input[type=range]{ flex:1;accent-color:var(--accent); }
+  .sliderrow .val { min-width:44px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--text-muted); }
+  /* pavé de visée */
+  .pad { position:relative;width:100%;aspect-ratio:1/1;border-radius:14px;
+         background:radial-gradient(circle at 50% 50%, var(--surface-3), var(--surface-2));
+         border:1px solid var(--border-strong);touch-action:none;cursor:crosshair;overflow:hidden; }
+  .pad .cross { position:absolute;background:var(--border-strong); }
+  .pad .cx { left:50%;top:0;width:1px;height:100%; } .pad .cy { top:50%;left:0;height:1px;width:100%; }
+  .pad .handle { position:absolute;width:26px;height:26px;border-radius:50%;
+                 background:var(--accent);border:2px solid #fff3;transform:translate(-50%,-50%);
+                 box-shadow:0 2px 10px #0007; }
+  .hint { color:var(--text-muted);font-size:12.5px;margin-top:8px; }
+  .row { display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px; }
+  footer { text-align:center;color:var(--text-muted);font-size:11.5px;padding:22px 16px 30px; }
+  body.embed > header, body.embed footer { display:none; } body.embed main { padding:0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">◕</div>
+  <div><h1>Yeux du robot</h1><div class="sub">Studio 360 pour Sirius — projet indépendant</div></div>
+  <div class="spacer"></div>
+  <a class="link" href="/" target="_top">← Interface principale</a>
+  <a class="link" href="/accueil" target="_top">Tous les outils</a>
+  <a class="link" href="/deambulation" target="_top">Déambulation</a>
+  <a class="link" href="/enchainements" target="_top">Enchaînements</a>
+  <a class="link" href="/tableau" target="_top">Tableau de bord</a>
+  <span class="chip"><i class="dot" id="dot-link"></i><span id="lbl-link">liaison…</span></span>
+  <button id="theme" title="Thème" style="min-height:34px;padding:6px 10px">◐</button>
+</header>
+
+<main>
+  <div class="banner">
+    <span class="ico">⚠</span>
+    <div>Contrôle des yeux par la voie UDP de l'écran de la tête. Relevé sur le robot
+      le 28/07 : le seul port en écoute est le <b>8768</b> — les 8769 / 8770 / 8772 du script
+      Blender ne sont pas ouverts sur ce firmware. L'aperçu ci-contre simule ce qui est envoyé.</div>
+  </div>
+
+  <div class="cols">
+    <section class="card">
+      <h2>Aperçu</h2>
+      <svg id="eye" viewBox="0 0 240 284" width="100%" style="border-radius:12px;background:#05060a;display:block">
+        <defs>
+          <clipPath id="eyeclip"><ellipse cx="120" cy="142" rx="104" ry="120"></ellipse></clipPath>
+        </defs>
+        <ellipse cx="120" cy="142" rx="104" ry="120" fill="#0e1116"></ellipse>
+        <g clip-path="url(#eyeclip)">
+          <ellipse cx="120" cy="142" rx="104" ry="120" fill="#0b1220"></ellipse>
+          <g id="iris">
+            <circle id="iris-c" cx="120" cy="142" r="52" fill="#22d3ee"></circle>
+            <circle id="pupil-c" cx="120" cy="142" r="24" fill="#04161b"></circle>
+            <circle id="glint" cx="104" cy="126" r="9" fill="#ffffffcc"></circle>
+          </g>
+          <rect id="lid-up" x="0" y="0" width="240" height="0" fill="#05060a"></rect>
+          <rect id="lid-lo" x="0" y="284" width="240" height="0" fill="#05060a"></rect>
+        </g>
+      </svg>
+      <div class="hint">Glisse dans le pavé pour diriger le regard. L'aperçu reflète ce qui est envoyé.</div>
+    </section>
+
+    <section class="card">
+      <h2>Commande</h2>
+      <div class="pad" id="pad">
+        <div class="cross cx"></div><div class="cross cy"></div>
+        <div class="handle" id="handle" style="left:50%;top:50%"></div>
+      </div>
+      <div class="sliderrow"><label>Dilatation</label>
+        <input type="range" id="scale" min="0.4" max="1.8" step="0.05" value="1">
+        <span class="val" id="scale-v">1.00</span></div>
+      <div class="sliderrow"><label>Rotation</label>
+        <input type="range" id="rot" min="0" max="359" step="1" value="0">
+        <span class="val" id="rot-v">0°</span></div>
+      <div class="sliderrow"><label>Paupières</label>
+        <input type="range" id="blink" min="0" max="1" step="0.02" value="0">
+        <span class="val" id="blink-v">ouvert</span></div>
+      <div class="row">
+        <button class="primary" id="blink-btn">Cligner</button>
+        <label class="chip"><input type="checkbox" id="autoblink" style="margin-right:6px">Clignement auto</label>
+        <button id="center">Recentrer</button>
+      </div>
+
+      <h2 style="margin-top:18px">Mise au point (expérimental)</h2>
+      <div class="hint" style="margin-top:0">
+        Le robot repeint son écran en continu avec sa propre animation d'émotion.
+        Il faut sans doute <b>lui prendre la main</b> avant qu'il écoute nos trames.
+        Regarde le visage du robot en essayant ces deux réglages.
+      </div>
+      <div class="row">
+        <button id="priorite">Prendre la main sur l'écran</button>
+        <button id="rendre">Rendre la main au robot</button>
+        <label class="chip">Canal
+          <select id="canal" style="margin-left:6px;background:var(--surface-3);color:var(--text-primary);border:1px solid var(--border-strong);border-radius:7px;min-height:30px">
+            <option value="principal">principal (8768)</option>
+            <option value="face">visage (8770)</option>
+            <option value="overlay">overlay (8769)</option>
+          </select>
+        </label>
+      </div>
+      <div class="hint" id="diag"></div>
+      <h2 style="margin-top:16px">Expressions</h2>
+      <div class="presets" id="presets"></div>
+    </section>
+  </div>
+
+  <footer><b>Studio 360 pour Sirius</b> — projet indépendant d'explorations360, sans lien ni affiliation avec Hengbot.</footer>
+</main>
+
+<script>
+"use strict";
+const API = "";
+const $ = (s) => document.querySelector(s);
+const EY = 120, EZ = 142;           // amplitudes envoyées au robot
+if (window.self !== window.top) document.body.classList.add("embed");
+
+/* thème (clé partagée) */
+(function(){ const k="sirius.theme";
+  const res=(v)=>(v==="auto"||v==="system")?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):v;
+  const app=()=>{let v=null;try{v=new URLSearchParams(location.search).get("theme")||localStorage.getItem(k);}catch(e){}
+    const t=res(v); if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;};
+  app(); addEventListener("storage",e=>{if(e.key===k)app();});
+  $("#theme").onclick=()=>{const el=document.documentElement;const t=el.dataset.theme==="light"?"dark":"light";
+    el.dataset.theme=t;try{localStorage.setItem(k,t);}catch(e){}};
+})();
+
+function lien(ok,txt){ $("#dot-link").style.background=ok?"var(--good)":"var(--critical)"; $("#lbl-link").textContent=txt; }
+async function ping(){ try{const r=await fetch(API+"/api/status",{cache:"no-store"});
+  if(r.ok){const j=await r.json();lien(!!j.connected,j.connected?"robot connecté":"robot déconnecté");return;}}catch(e){}
+  lien(false,"helper injoignable"); }
+
+/* état des yeux */
+const eyes = { pos_y:0, pos_z:0, scale:1, rot_x:0, blink:0, canal:"principal" };
+
+/* mise au point : donner / rendre la main sur l'écran, choisir le canal */
+async function priorite(mine){
+  const body = mine ? {main_weight:0, channel2_weight:1} : {main_weight:1, channel2_weight:0};
+  try{
+    const r = await fetch(API+"/api/eyes/priorite",{method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    $("#diag").textContent = r.ok
+      ? (mine ? "Main prise sur l'écran — bouge le regard et observe le robot."
+              : "Main rendue au robot.")
+      : "Refusé (robot connecté ?)";
+  }catch(e){ $("#diag").textContent = "Service injoignable."; }
+}
+
+/* envoi throttlé (~20 Hz) */
+let _last=0, _pending=null, _timer=null;
+function envoie(){
+  const now=performance.now();
+  const doIt=()=>{ _last=performance.now(); _pending=null;
+    fetch(API+"/api/eyes",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(eyes)}).catch(()=>{}); };
+  if(now-_last>=50){ doIt(); }
+  else if(!_timer){ _timer=setTimeout(()=>{_timer=null;doIt();}, 50-(now-_last)); }
+  apercu();
+}
+
+/* aperçu SVG */
+function apercu(){
+  const cx=120+eyes.pos_y*0.62, cy=142-eyes.pos_z*0.62;
+  const r=52*eyes.scale;
+  $("#iris").setAttribute("transform",`rotate(${eyes.rot_x} ${cx} ${cy})`);
+  const ir=$("#iris-c"), pu=$("#pupil-c"), gl=$("#glint");
+  ir.setAttribute("cx",cx); ir.setAttribute("cy",cy); ir.setAttribute("r",r);
+  pu.setAttribute("cx",cx); pu.setAttribute("cy",cy); pu.setAttribute("r",24*eyes.scale);
+  gl.setAttribute("cx",cx-16); gl.setAttribute("cy",cy-16);
+  // paupières : blink 0 = ouvert, 1 = fermé (elles se rejoignent au centre)
+  const h=142*eyes.blink;
+  $("#lid-up").setAttribute("height",h);
+  $("#lid-lo").setAttribute("y",284-h); $("#lid-lo").setAttribute("height",h);
+}
+
+/* pavé de visée */
+const pad=$("#pad"), handle=$("#handle");
+let dragging=false;
+function posDepuisEvent(e){
+  const r=pad.getBoundingClientRect();
+  let nx=( (e.clientX-r.left)/r.width )*2-1;
+  let ny=( (e.clientY-r.top)/r.height )*2-1;
+  nx=Math.max(-1,Math.min(1,nx)); ny=Math.max(-1,Math.min(1,ny));
+  eyes.pos_y=Math.round(nx*EY); eyes.pos_z=Math.round(-ny*EZ);
+  handle.style.left=((nx+1)/2*100)+"%"; handle.style.top=((ny+1)/2*100)+"%";
+  envoie();
+}
+pad.addEventListener("pointerdown",e=>{dragging=true;pad.setPointerCapture(e.pointerId);posDepuisEvent(e);});
+pad.addEventListener("pointermove",e=>{if(dragging)posDepuisEvent(e);});
+pad.addEventListener("pointerup",()=>{dragging=false;});
+
+/* sliders */
+$("#scale").oninput=e=>{eyes.scale=+e.target.value;$("#scale-v").textContent=eyes.scale.toFixed(2);envoie();};
+$("#rot").oninput=e=>{eyes.rot_x=+e.target.value;$("#rot-v").textContent=eyes.rot_x+"°";envoie();};
+$("#blink").oninput=e=>{eyes.blink=+e.target.value;
+  $("#blink-v").textContent=eyes.blink<0.05?"ouvert":eyes.blink>0.95?"fermé":Math.round(eyes.blink*100)+"%";envoie();};
+
+/* clignement */
+async function cligne(){
+  const steps=[0,.4,.8,1,.8,.4,0];
+  for(const b of steps){ eyes.blink=b; syncBlinkUI(); envoie(); await new Promise(r=>setTimeout(r,28)); }
+}
+function syncBlinkUI(){ $("#blink").value=eyes.blink;
+  $("#blink-v").textContent=eyes.blink<0.05?"ouvert":eyes.blink>0.95?"fermé":Math.round(eyes.blink*100)+"%"; }
+$("#blink-btn").onclick=cligne;
+let _autoTimer=null;
+$("#autoblink").onchange=e=>{ if(e.target.checked){ _autoTimer=setInterval(cligne,4200); } else { clearInterval(_autoTimer);_autoTimer=null; } };
+
+/* recentrer */
+function applique(st){ Object.assign(eyes,st);
+  handle.style.left=((eyes.pos_y/EY+1)/2*100)+"%"; handle.style.top=((-eyes.pos_z/EZ+1)/2*100)+"%";
+  $("#scale").value=eyes.scale; $("#scale-v").textContent=eyes.scale.toFixed(2);
+  $("#rot").value=eyes.rot_x; $("#rot-v").textContent=eyes.rot_x+"°";
+  $("#blink").value=eyes.blink; syncBlinkUI(); envoie(); }
+$("#center").onclick=()=>applique({pos_y:0,pos_z:0,scale:1,rot_x:0,blink:0});
+
+/* expressions prédéfinies (pures poses d'yeux) */
+const PRESETS = [
+  ["Neutre",   {pos_y:0,   pos_z:0,   scale:1.0, rot_x:0,  blink:0}],
+  ["Curieux",  {pos_y:34,  pos_z:40,  scale:1.15,rot_x:0,  blink:0.1}],
+  ["Surpris",  {pos_y:0,   pos_z:20,  scale:1.7, rot_x:0,  blink:0}],
+  ["Endormi",  {pos_y:0,   pos_z:-30, scale:0.8, rot_x:0,  blink:0.7}],
+  ["Suspicieux",{pos_y:-40,pos_z:-10, scale:0.9, rot_x:0,  blink:0.45}],
+  ["Regard G", {pos_y:-90, pos_z:0,   scale:1.0, rot_x:0,  blink:0}],
+  ["Regard D", {pos_y:90,  pos_z:0,   scale:1.0, rot_x:0,  blink:0}],
+  ["En haut",  {pos_y:0,   pos_z:100, scale:1.0, rot_x:0,  blink:0}],
+];
+$("#presets").innerHTML = PRESETS.map((p,i)=>`<button data-p="${i}">${p[0]}</button>`).join("");
+$("#presets").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>applique(PRESETS[+b.dataset.p][1]));
+
+$("#priorite").onclick = ()=>priorite(true);
+$("#rendre").onclick   = ()=>priorite(false);
+$("#canal").onchange   = (e)=>{ eyes.canal = e.target.value;
+  $("#diag").textContent = "Canal : " + (eyes.canal==="overlay" ? "overlay (8769)" : "visage (8770)"); envoie(); };
+
+/* démarrage */
+apercu(); ping(); setInterval(ping,3000);
+</script>
+</body>
+</html>

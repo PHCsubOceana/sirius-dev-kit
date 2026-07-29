@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enchaînements — Studio 360</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+  :root {
+    color-scheme: dark;
+    --plane:#0b0d10; --surface-1:#141619; --surface-2:#1c2026; --surface-3:#232830;
+    --text-primary:#fff; --text-secondary:#b4bcc8; --text-muted:#7d8794;
+    --border:#ffffff17; --border-strong:#ffffff29;
+    --accent:#22d3ee; --accent-fill:#18a5c4; --accent-soft:#22d3ee1f;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    --anim:#22d3ee; --group:#a78bfa; --pause:#7d8794; --wander:#34d399; --stand:#fab219;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --plane:#f2f4f6; --surface-1:#fcfcfb; --surface-2:#f1f2f4; --surface-3:#e7e9ec;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#6b7280;
+    --border:#0b0b0b1c; --border-strong:#0b0b0b33;
+    --accent:#0891b2; --accent-fill:#0891b2; --accent-soft:#0891b21a;
+    --anim:#0891b2; --group:#7c3aed; --pause:#6b7280; --wander:#059669; --stand:#b45309;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--plane); color:var(--text-primary);
+         font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+           padding:14px 18px; background:var(--surface-1); border-bottom:1px solid var(--border); }
+  .logo { width:34px;height:34px;border-radius:9px;background:var(--accent-soft);
+          display:grid;place-items:center;color:var(--accent);flex:none; }
+  h1 { font-size:17px; margin:0; font-weight:650; }
+  .sub { color:var(--text-muted); font-size:12px; }
+  .spacer { flex:1 1 auto; }
+  a.link { color:var(--accent); text-decoration:none; font-size:13px; font-weight:600; }
+  a.link:hover { text-decoration:underline; }
+  .chip { display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+          background:var(--surface-2);border:1px solid var(--border);font-size:13px;color:var(--text-secondary); }
+  .dot { width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex:none; }
+  main { padding:16px; max-width:1180px; margin:0 auto; }
+  .banner { display:flex;gap:11px;align-items:flex-start;padding:12px 14px;border-radius:11px;
+            background:color-mix(in srgb, var(--warning) 12%, var(--surface-1));
+            border:1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+            margin-bottom:16px; font-size:13.5px; color:var(--text-secondary); }
+  .banner b { color:var(--text-primary); }
+  .banner .ico { color:var(--warning); flex:none; }
+  .card { background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:16px; }
+  .card h2 { font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);
+             margin:0 0 12px;font-weight:600; }
+  .cardhead { display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px; }
+  .cardhead h2 { margin:0; }
+  button { font:inherit;font-weight:600;border-radius:10px;cursor:pointer;padding:10px 16px;
+           border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-primary);min-height:42px; }
+  button:hover:not(:disabled){ background:var(--surface-3); }
+  button:disabled{ opacity:.45;cursor:not-allowed; }
+  button.small { padding:5px 9px;min-height:32px;font-size:12px; }
+  #play { background:var(--accent-fill);border-color:transparent;color:#04161b; }
+  #stop { background:var(--critical);border-color:transparent;color:#fff; }
+  #wake { background:color-mix(in srgb, var(--stand) 22%, var(--surface-2)); }
+  select, input[type="number"], input[type="text"] {
+    font:inherit;min-height:40px;border-radius:9px;border:1px solid var(--border-strong);
+    background:var(--surface-2);color:var(--text-primary);padding:0 10px; }
+  input[type="number"]{ width:92px; }
+  label.inline { font-size:13px;color:var(--text-secondary);display:inline-flex;align-items:center;gap:7px; }
+  .row { display:flex;gap:10px;align-items:center;flex-wrap:wrap; }
+  .cmds { display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px; }
+  #status { color:var(--text-secondary);font-size:13.5px;min-height:20px;margin-top:4px; }
+  /* — timeline / séquence — */
+  .timeline { display:flex;gap:10px;overflow-x:auto;padding:6px 2px 12px;min-height:96px; }
+  .timeline:empty::after { content:"Aucun bloc. Ajoute-en un ci-dessous.";
+                           color:var(--text-muted);font-size:13px;padding:24px 4px; }
+  .blk { flex:none;width:150px;border-radius:11px;padding:10px;position:relative;
+         border:1px solid var(--border-strong);background:var(--surface-2);
+         display:flex;flex-direction:column;gap:6px; }
+  .blk.on { outline:2px solid var(--accent);outline-offset:2px; }
+  .blk .type { font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:700; }
+  .blk .name { font-size:13.5px;font-weight:600;word-break:break-word;line-height:1.25; }
+  .blk .dur { font-size:11.5px;color:var(--text-muted); }
+  .blk.t-anim { border-left:4px solid var(--anim); }
+  .blk.t-group { border-left:4px solid var(--group); }
+  .blk.t-pause { border-left:4px solid var(--pause); }
+  .blk.t-wander { border-left:4px solid var(--wander); }
+  .blk.t-stand { border-left:4px solid var(--stand); }
+  .blk .type.t-anim{color:var(--anim);} .blk .type.t-group{color:var(--group);}
+  .blk .type.t-pause{color:var(--pause);} .blk .type.t-wander{color:var(--wander);}
+  .blk .type.t-stand{color:var(--stand);}
+  .blk .ctl { display:flex;gap:4px;margin-top:auto; }
+  .blk .ctl button { flex:1;padding:3px 0;min-height:28px;font-size:12px; }
+  .blk .duredit { display:flex;align-items:center;gap:5px; }
+  .blk .duredit input { width:60px;min-height:30px; }
+  .grp { border:1px solid var(--border);border-radius:10px;padding:11px;margin-bottom:10px;background:var(--surface-2); }
+  .grp .head { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
+  .grp .head .nm { font-weight:650;color:var(--group); }
+  .members { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px; }
+  .memb { display:inline-flex;align-items:center;gap:6px;background:var(--surface-3);
+          border:1px solid var(--border);border-radius:999px;padding:3px 6px 3px 10px;font-size:12.5px; }
+  .memb button { background:none;border:none;color:var(--text-muted);min-height:auto;padding:0 2px;font-size:14px; }
+  .memb button:hover { color:var(--critical); }
+  .hint { color:var(--text-muted);font-size:12.5px; }
+  footer { text-align:center;color:var(--text-muted);font-size:11.5px;padding:22px 16px 30px; }
+  body.embed > header, body.embed footer { display:none; }
+  body.embed main { padding:0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">▦</div>
+  <div>
+    <h1>Enchaînements — Play Blocks</h1>
+    <div class="sub">Studio 360 pour Sirius — projet indépendant</div>
+  </div>
+  <div class="spacer"></div>
+  <a class="link" href="/" target="_top">← Interface principale</a>
+  <a class="link" href="/accueil" target="_top">Tous les outils</a>
+  <a class="link" href="/deambulation" target="_top">Déambulation</a>
+  <a class="link" href="/tableau" target="_top">Tableau de bord</a>
+  <span class="chip"><i class="dot" id="dot-link"></i><span id="lbl-link">liaison…</span></span>
+  <button id="theme" title="Thème" class="small">◐</button>
+</header>
+
+<main>
+  <div class="banner">
+    <span class="ico">⚠</span>
+    <div>
+      <b>Au sol, espace dégagé.</b> Les blocs jouent de vraies animations et peuvent
+      faire marcher le robot (Auto-wander). Garde une main à portée — <b>Stop</b> coupe
+      le cycle, annule l'action en cours et arrête la déambulation.
+      Le cycle est piloté depuis ce PC : <b>garde cet onglet ouvert</b> pendant la lecture.
+    </div>
+  </div>
+
+  <!-- commandes de lecture -->
+  <section class="card">
+    <div class="cmds">
+      <button id="play">▶ Play Blocks</button>
+      <button id="stop" disabled>■ Stop</button>
+      <label class="inline"><input type="checkbox" id="loop"> Boucler au début</label>
+      <span class="hint">(décoché = s'arrête en fin de cycle)</span>
+      <div class="spacer"></div>
+      <button id="wake" title="Réveille et fige le robot debout, de façon robuste">Réveil / Debout</button>
+    </div>
+    <div id="status">Prêt.</div>
+  </section>
+
+  <!-- la séquence -->
+  <section class="card">
+    <div class="cardhead">
+      <h2>Séquence</h2>
+      <span class="hint" id="seq-count"></span>
+    </div>
+    <div class="timeline" id="timeline"></div>
+
+    <div class="row" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+      <label class="inline">Ajouter :
+        <select id="add-type">
+          <option value="anim">Animation</option>
+          <option value="group">Groupe (aléatoire)</option>
+          <option value="pause">Pause</option>
+          <option value="wander">Auto-wander</option>
+          <option value="stand">Réveil / Debout</option>
+        </select>
+      </label>
+      <span id="add-value-wrap"></span>
+      <label class="inline" id="add-dur-wrap">durée
+        <input type="number" id="add-dur" min="0" step="1" placeholder="—">
+        <span class="hint" id="add-dur-unit">s (vide = 1 lecture)</span>
+      </label>
+      <button id="add-blk" class="small">+ Ajouter</button>
+    </div>
+    <div class="hint" style="margin-top:8px">
+      Animation / Groupe : sans durée, l'action est jouée une fois ; avec une durée,
+      elle boucle pendant ce temps. Pause et Auto-wander utilisent la durée comme temps d'exécution.
+    </div>
+  </section>
+
+  <!-- groupes -->
+  <section class="card">
+    <div class="cardhead">
+      <h2>Groupes d'animations (tirage aléatoire)</h2>
+      <span class="hint">placé dans la séquence, un groupe joue l'une de ses animations au hasard</span>
+    </div>
+    <div id="groups"></div>
+    <div class="row" style="margin-top:8px">
+      <input type="text" id="grp-name" placeholder="Nom du groupe (ex. IdleGroup01)" style="flex:1;min-width:200px">
+      <button id="grp-add" class="small">+ Nouveau groupe</button>
+    </div>
+  </section>
+
+  <!-- persistance -->
+  <section class="card">
+    <div class="row">
+      <button id="export" class="small">Exporter (JSON)</button>
+      <button id="import" class="small">Importer (JSON)</button>
+      <input type="file" id="import-file" accept="application/json,.json" style="display:none">
+      <span class="spacer"></span>
+      <button id="wipe" class="small">Tout effacer</button>
+    </div>
+    <div class="hint" style="margin-top:8px" id="sync"></div>
+    <div class="hint" style="margin-top:4px" id="lib-note"></div>
+  </section>
+
+  <footer>
+    <b>Studio 360 pour Sirius</b> — projet indépendant d'explorations360, sans lien ni
+    affiliation avec Hengbot. Éditeur d'enchaînements de comportement.
+  </footer>
+</main>
+
+<script>
+"use strict";
+const API = "";
+const $ = (s) => document.querySelector(s);
+const uid = () => "b" + Math.round(performance.now() * 1000).toString(36) + Math.floor(performance.now() % 1000);
+const ANIM_EST_MS = 2600;        // durée estimée d'une action jouée une fois (pas d'event de fin)
+const PING_MS = 3000;
+
+const ENCASTREE = window.self !== window.top;
+if (ENCASTREE) document.body.classList.add("embed");
+
+/* ── thème (même clé que Studio 360) ─────────────────────────────────────── */
+(function theme(){
+  const k = "sirius.theme";
+  const resous = (v) => (v === "auto" || v === "system")
+    ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : v;
+  const applique = () => {
+    let v = null;
+    try { v = new URLSearchParams(location.search).get("theme") || localStorage.getItem(k); } catch(e){}
+    const t = resous(v);
+    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  };
+  applique();
+  addEventListener("storage", (e) => { if (e.key === k) applique(); });
+  matchMedia("(prefers-color-scheme: light)").addEventListener("change", applique);
+  $("#theme").onclick = () => {
+    const el = document.documentElement;
+    const t = el.dataset.theme === "light" ? "dark" : "light";
+    el.dataset.theme = t; try { localStorage.setItem(k, t); } catch(e){}
+  };
+})();
+
+/* ── état (persisté en local) ────────────────────────────────────────────── */
+const STORE = "sirius.enchainements";
+let ACTIONS = [];                 // bibliothèque du robot
+let data = { groups: [], sequence: [], loop: false };
+
+// Persistance à deux niveaux : le PC (via le helper, source partagée) et le
+// navigateur (cache hors-ligne). On sauve les deux ; on charge le PC en
+// priorité, avec repli local si le helper est injoignable.
+function chargeLocal(){
+  try { const j = JSON.parse(localStorage.getItem(STORE) || "null");
+    if (j && typeof j === "object") data = Object.assign(data, j); } catch(e){}
+  data.groups = data.groups || []; data.sequence = data.sequence || [];
+}
+function sauveLocal(){ try { localStorage.setItem(STORE, JSON.stringify(data)); } catch(e){} }
+
+let _syncTimer = null;
+function sauve(){ sauveLocal(); clearTimeout(_syncTimer); _syncTimer = setTimeout(sauveDistant, 600); }
+
+async function sauveDistant(){
+  try {
+    const r = await fetch(API + "/api/enchainements", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
+    majSync(r.ok ? "pc" : "local");
+  } catch(e){ majSync("local"); }
+}
+async function chargeDistant(){
+  try { const r = await fetch(API + "/api/enchainements", {cache:"no-store"});
+    if (r.ok) return {ok:true, data: await r.json()}; } catch(e){}
+  return {ok:false, data:null};
+}
+function majSync(mode){
+  const el = $("#sync"); if (!el) return;
+  el.textContent =
+    mode === "pc"      ? "✓ Enregistré sur le PC (partagé, indépendant du navigateur)."
+  : mode === "pcmigre" ? "✓ Séquences de ce navigateur migrées vers le PC."
+  :                      "Enregistré dans ce navigateur (helper injoignable — sauvegarde PC indisponible).";
+}
+const nomAction = (a) => a.id || a.name || a.filename || a.file || "";
+const groupe = (id) => data.groups.find(g => g.id === id);
+
+/* ── bibliothèque + liaison ──────────────────────────────────────────────── */
+function lien(ok, txt){
+  $("#dot-link").style.background = ok ? "var(--good)" : "var(--critical)";
+  $("#lbl-link").textContent = txt;
+}
+async function chargeActions(){
+  try {
+    const r = await fetch(API + "/api/actions", {cache:"no-store"});
+    if (r.ok) { ACTIONS = (await r.json()).actions || []; lien(true, "robot connecté"); }
+    else { ACTIONS = []; lien(false, "robot non connecté"); }
+  } catch(e){ ACTIONS = []; lien(false, "helper injoignable"); }
+  $("#lib-note").textContent = ACTIONS.length
+    ? (ACTIONS.length + " animations dans la bibliothèque du robot")
+    : "Robot non connecté dans Studio 360 — connecte-le pour choisir des animations. "
+      + "Tu peux déjà construire une séquence, mais la lecture nécessite le robot.";
+}
+async function ping(){
+  try { const r = await fetch(API + "/api/status", {cache:"no-store"});
+    if (r.ok){ const j = await r.json(); lien(!!j.connected, j.connected ? "robot connecté" : "robot déconnecté"); return; } }
+  catch(e){}
+  lien(false, "helper injoignable");
+}
+
+/* ── réseau ──────────────────────────────────────────────────────────────── */
+async function post(path, body){
+  try {
+    const r = await fetch(API + path, {method:"POST",
+      headers: body ? {"Content-Type":"application/json"} : undefined,
+      body: body ? JSON.stringify(body) : undefined});
+    return r.ok;
+  } catch(e){ return false; }
+}
+
+/* ── options des menus « ajouter » ───────────────────────────────────────── */
+function optionsActions(sel){
+  let h = "";
+  for (const a of ACTIONS){ const n = nomAction(a); if(!n) continue;
+    h += `<option value="${n}"${sel===n?" selected":""}>${n}</option>`; }
+  return h || '<option value="">(robot non connecté)</option>';
+}
+function optionsGroupes(sel){
+  if (!data.groups.length) return '<option value="">(aucun groupe défini)</option>';
+  return data.groups.map(g => `<option value="${g.id}"${sel===g.id?" selected":""}>${g.name}</option>`).join("");
+}
+function majAddControls(){
+  const t = $("#add-type").value;
+  const w = $("#add-value-wrap");
+  if (t === "anim") w.innerHTML = `<select id="add-value">${optionsActions()}</select>`;
+  else if (t === "group") w.innerHTML = `<select id="add-value">${optionsGroupes()}</select>`;
+  else w.innerHTML = "";
+  const dur = $("#add-dur-wrap");
+  if (t === "pause" || t === "wander"){
+    dur.style.display = "";
+    $("#add-dur").value = (t === "wander" ? 60 : 5);
+    $("#add-dur-unit").textContent = "s (obligatoire)";
+  } else if (t === "stand"){
+    dur.style.display = "none";
+  } else {
+    dur.style.display = ""; $("#add-dur").value = "";
+    $("#add-dur-unit").textContent = "s (vide = 1 lecture)";
+  }
+}
+
+/* ── séquence : rendu ────────────────────────────────────────────────────── */
+const LABELS = {anim:"Animation", group:"Groupe", pause:"Pause", wander:"Auto-wander", stand:"Réveil/Debout"};
+function libelleBloc(b){
+  if (b.type === "anim") return b.name || "(non défini)";
+  if (b.type === "group"){ const g = groupe(b.groupId); return g ? g.name : "(groupe supprimé)"; }
+  if (b.type === "pause") return "Pause";
+  if (b.type === "wander") return "Auto-wander";
+  if (b.type === "stand") return "Réveil / Debout";
+  return "?";
+}
+function texteDuree(b){
+  if (b.type === "stand") return "";
+  if (b.type === "pause" || b.type === "wander") return (b.duree||0) + " s";
+  return (b.duree && b.duree > 0) ? ("boucle " + b.duree + " s") : "1 lecture";
+}
+function renduSequence(courant){
+  const tl = $("#timeline");
+  tl.innerHTML = data.sequence.map((b, i) => {
+    const dureeEditable = (b.type !== "stand");
+    const durInput = dureeEditable
+      ? `<div class="duredit"><input type="number" min="0" step="1" value="${b.duree??""}"
+             data-dur="${i}" title="durée en secondes"><span class="hint">s</span></div>` : "";
+    return `<div class="blk t-${b.type} ${courant===i?"on":""}">
+        <div class="type t-${b.type}">${LABELS[b.type]}</div>
+        <div class="name">${libelleBloc(b)}</div>
+        <div class="dur">${texteDuree(b)}</div>
+        ${durInput}
+        <div class="ctl">
+          <button class="small" data-mv="${i}" data-d="-1" title="reculer">◀</button>
+          <button class="small" data-mv="${i}" data-d="1" title="avancer">▶</button>
+          <button class="small" data-rm="${i}" title="retirer">✕</button>
+        </div>
+      </div>`;
+  }).join("");
+  $("#seq-count").textContent = data.sequence.length ? (data.sequence.length + " bloc(s)") : "";
+  tl.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { data.sequence.splice(+b.dataset.rm,1); sauve(); renduSequence(); });
+  tl.querySelectorAll("[data-mv]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.mv, d = +b.dataset.d, j = i + d;
+    if (j < 0 || j >= data.sequence.length) return;
+    const s = data.sequence; [s[i], s[j]] = [s[j], s[i]]; sauve(); renduSequence();
+  });
+  tl.querySelectorAll("[data-dur]").forEach(inp => inp.onchange = () => {
+    const i = +inp.dataset.dur, v = inp.value === "" ? null : Math.max(0, +inp.value);
+    data.sequence[i].duree = v; sauve(); renduSequence();
+  });
+}
+
+/* ── groupes : rendu ─────────────────────────────────────────────────────── */
+function renduGroupes(){
+  const c = $("#groups");
+  if (!data.groups.length){ c.innerHTML = '<div class="hint">Aucun groupe. Crée-en un ci-dessous (ex. un groupe « Idle » avec plusieurs animations au repos).</div>'; return; }
+  c.innerHTML = data.groups.map(g => `
+    <div class="grp">
+      <div class="head">
+        <span class="nm">${g.name}</span>
+        <span class="hint">${g.members.length} animation(s)</span>
+        <span class="spacer" style="flex:1"></span>
+        <button class="small" data-gdel="${g.id}">Supprimer</button>
+      </div>
+      <div class="members">${g.members.map(m =>
+        `<span class="memb">${m}<button data-gmrm="${g.id}|${m}" title="retirer">×</button></span>`).join("")
+        || '<span class="hint">vide — ajoute des animations</span>'}</div>
+      <div class="row">
+        <select data-gsel="${g.id}">${optionsActions()}</select>
+        <button class="small" data-gadd="${g.id}">+ Ajouter au groupe</button>
+      </div>
+    </div>`).join("");
+  c.querySelectorAll("[data-gdel]").forEach(b => b.onclick = () => {
+    data.groups = data.groups.filter(g => g.id !== b.dataset.gdel); sauve(); renduGroupes(); renduSequence(); });
+  c.querySelectorAll("[data-gadd]").forEach(b => b.onclick = () => {
+    const g = groupe(b.dataset.gadd); const sel = document.querySelector(`select[data-gsel="${g.id}"]`);
+    const v = sel && sel.value; if (v && !g.members.includes(v)) g.members.push(v); sauve(); renduGroupes(); });
+  c.querySelectorAll("[data-gmrm]").forEach(b => b.onclick = () => {
+    const [gid, m] = b.dataset.gmrm.split("|"); const g = groupe(gid);
+    if (g) g.members = g.members.filter(x => x !== m); sauve(); renduGroupes(); });
+}
+
+/* ── ajout de bloc ───────────────────────────────────────────────────────── */
+$("#add-type").onchange = majAddControls;
+$("#add-blk").onclick = () => {
+  const t = $("#add-type").value;
+  const b = { id: uid(), type: t };
+  const durRaw = $("#add-dur").value;
+  const dur = durRaw === "" ? null : Math.max(0, +durRaw);
+  if (t === "anim"){ const v = ($("#add-value")||{}).value; if(!v){ flash("Choisis une animation."); return; } b.name = v; b.duree = dur; }
+  else if (t === "group"){ const v = ($("#add-value")||{}).value; if(!v){ flash("Choisis un groupe."); return; } b.groupId = v; b.duree = dur; }
+  else if (t === "pause"){ b.duree = dur && dur>0 ? dur : 5; }
+  else if (t === "wander"){ b.duree = dur && dur>0 ? dur : 60; }
+  else if (t === "stand"){ /* pas de durée */ }
+  data.sequence.push(b); sauve(); renduSequence();
+};
+
+/* ── groupes : création ──────────────────────────────────────────────────── */
+$("#grp-add").onclick = () => {
+  const nm = ($("#grp-name").value || "").trim();
+  if (!nm){ flash("Donne un nom au groupe."); return; }
+  data.groups.push({ id: uid(), name: nm, members: [] });
+  $("#grp-name").value = ""; sauve(); renduGroupes(); majAddControls();
+};
+
+/* ── export / import / effacer ───────────────────────────────────────────── */
+$("#export").onclick = () => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "enchainements_sirius.json"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+$("#import").onclick = () => $("#import-file").click();
+$("#import-file").onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try { const j = JSON.parse(rd.result);
+      data = { groups: j.groups||[], sequence: j.sequence||[], loop: !!j.loop };
+      $("#loop").checked = data.loop; sauve(); renduGroupes(); renduSequence(); majAddControls();
+      flash("Importé ✓");
+    } catch(err){ flash("Fichier JSON invalide."); }
+  };
+  rd.readAsText(f); e.target.value = "";
+};
+$("#wipe").onclick = () => {
+  if (running) return;
+  data = { groups: [], sequence: [], loop: $("#loop").checked };
+  sauve(); renduGroupes(); renduSequence(); majAddControls();
+};
+$("#loop").onchange = () => { data.loop = $("#loop").checked; sauve(); };
+
+/* ── moteur « Play Blocks » ──────────────────────────────────────────────── */
+let running = false, stopFlag = false;
+
+function statut(txt){ $("#status").textContent = txt; }
+function flash(txt){ statut(txt); }
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+async function sleepInterruptible(ms){
+  const t0 = performance.now();
+  while (performance.now() - t0 < ms){
+    if (stopFlag) return;
+    await sleep(Math.min(120, ms));
+  }
+}
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+async function runBlock(b, i){
+  renduSequence(i);
+  if (b.type === "pause"){ statut(`Pause ${b.duree} s…`); await sleepInterruptible((b.duree||0)*1000); return; }
+  if (b.type === "stand"){ statut("Réveil / Debout…"); await post("/api/reveil_debout"); await sleepInterruptible(1600); return; }
+  if (b.type === "wander"){
+    statut(`Auto-wander ${b.duree} s…`);
+    await post("/api/deambulation/demarrer");
+    await sleepInterruptible((b.duree||0)*1000);
+    await post("/api/deambulation/arreter");
+    return;
+  }
+  // anim ou group
+  let name = b.name;
+  if (b.type === "group"){
+    const g = groupe(b.groupId);
+    if (!g || !g.members.length){ statut(`Groupe vide — ignoré`); await sleepInterruptible(300); return; }
+    name = pick(g.members);
+  }
+  if (!name){ await sleepInterruptible(200); return; }
+  if (b.duree && b.duree > 0){
+    statut(`« ${name} » en boucle ${b.duree} s…`);
+    await post("/api/action/play_ex", {name, loop:true, priority:5});
+    await sleepInterruptible(b.duree*1000);
+    await post("/api/action/cancel");
+  } else {
+    statut(`« ${name} »…`);
+    await post("/api/action/play_ex", {name, loop:false, priority:5});
+    await sleepInterruptible(ANIM_EST_MS);
+  }
+}
+
+async function play(){
+  if (running || !data.sequence.length) return;
+  running = true; stopFlag = false;
+  $("#play").disabled = true; $("#stop").disabled = false;
+  let cycles = 0;
+  do {
+    cycles++;
+    for (let i = 0; i < data.sequence.length; i++){
+      if (stopFlag) break;
+      await runBlock(data.sequence[i], i);
+    }
+  } while (!stopFlag && data.loop);
+  // arrêts de sécurité en sortie
+  await post("/api/action/cancel");
+  await post("/api/deambulation/arreter");
+  running = false;
+  $("#play").disabled = false; $("#stop").disabled = true;
+  renduSequence(-1);
+  statut(stopFlag ? "Arrêté." : `Cycle terminé (${cycles}).`);
+}
+
+async function stop(){
+  if (!running) return;
+  stopFlag = true;
+  statut("Arrêt en cours…");
+  await post("/api/action/cancel");
+  await post("/api/deambulation/arreter");
+}
+
+$("#play").onclick = play;
+$("#stop").onclick = stop;
+$("#wake").onclick = async () => {
+  $("#wake").disabled = true; statut("Réveil / Debout…");
+  const ok = await post("/api/reveil_debout");
+  statut(ok ? "Debout — comportement autonome en pause, mode sol." : "Échec — robot connecté ?");
+  $("#wake").disabled = false;
+};
+
+// Sécurité clavier : Échap arrête.
+addEventListener("keydown", (e) => { if (e.key === "Escape" && running){ e.preventDefault(); stop(); } });
+
+/* ── démarrage ───────────────────────────────────────────────────────────── */
+(async function init(){
+  chargeLocal();
+  const localG = data.groups.length, localS = data.sequence.length;
+  const dist = await chargeDistant();
+  if (dist.ok){
+    const d = dist.data || {};
+    const dg = (d.groups||[]).length, ds = (d.sequence||[]).length;
+    if (dg || ds){                         // le PC fait foi
+      data = {groups:d.groups||[], sequence:d.sequence||[], loop:!!d.loop};
+      sauveLocal(); majSync("pc");
+    } else if (localG || localS){          // PC vide mais on a du local : on migre
+      await sauveDistant(); majSync("pcmigre");
+    } else {
+      data = {groups:[], sequence:[], loop:!!d.loop}; majSync("pc");
+    }
+  } else {
+    majSync("local");                       // helper injoignable : cache local
+  }
+  $("#loop").checked = !!data.loop;
+  await chargeActions();
+  renduGroupes(); renduSequence(); majAddControls();
+  ping(); setInterval(ping, PING_MS);
+})();
+</script>
+</body>
+</html>

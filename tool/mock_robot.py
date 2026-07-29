@@ -343,7 +343,7 @@ class Sim:
     def network_event(self):
         return self.ev("network-status", {
             "error_message": "", "ip_address": "127.0.0.1", "is_connected": True,
-            "mac_address": "c0:4b:24:73:4a:07", "security_type": "WPA2",
+            "mac_address": "c0:4b:24:00:00:01", "security_type": "WPA2",
             "signal_strength": 55, "ssid": "SIMULATEUR", "status": 2})
 
     def lifecycle_event(self):

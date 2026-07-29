@@ -45,7 +45,7 @@ commandes jusqu'à réarmement explicite. C'est une protection que
 l'interface officielle n'a pas.
 """
 
-import argparse, asyncio, json, re, time, uuid
+import argparse, asyncio, json, re, socket, time, uuid
 from collections import deque
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -955,7 +955,8 @@ async def limits():
 
 
 # « RESET » — action et paramètres capturés sur l'interface officielle
-ACTION_RESET_FILE = "/root/material/actions/stand_default_returnPosition_brief.avi"
+ACTION_BASE_PATH = "/root/material/actions"
+ACTION_RESET_FILE = ACTION_BASE_PATH + "/stand_default_returnPosition_brief.avi"
 RESET_PRIORITY = 5      # priorité haute : sans elle l'action se fait écraser
 RESET_TORQUE = 2047     # couple maximal, nécessaire pour se relever
 
@@ -983,6 +984,58 @@ async def recovery():
     """Redressement après chute."""
     r = await link.request(CMD_RECOVER, {})
     return _wrap(r, CMD_RECOVER)
+
+
+@app.post("/api/reveil_debout")
+async def reveil_debout():
+    """
+    Réveil + « figer debout », de façon ROBUSTE.
+
+    Problème constaté (Phil) : au tout premier démarrage, après le réveil par
+    balayage sur l'écran de la tête, un simple bouton « Debout » ne suffit pas —
+    le robot se recouche ou se rendort. Deux causes, traitées ici dans l'ordre :
+
+      1. le comportement autonome (priorité 1) rejoue ses propres actions et
+         écrase le redressement → on le met en PAUSE et on coupe les actions
+         aléatoires ;
+      2. le balayage de l'écran bascule peut-être le robot en mode « desktop »
+         (démarche bridée, posture instable) → on force le mode « ground ».
+
+    Puis on joue returnPosition en priorité 5 / couple maxi, et on le REJOUE une
+    fois après un court instant pour le tenir debout le temps que l'autonome soit
+    bien retombé. Le tout premier réveil après mise sous tension exige, lui, le
+    balayage physique — ça, aucune commande ne le remplace (cf. API §8).
+    """
+    etapes = []
+
+    async def _tenter(cmd, data, cle):
+        try:
+            r = await link.request(cmd, data)
+            etapes.append({"etape": cle, "ok": bool(r.get("success"))})
+            return r
+        except HTTPException as e:
+            etapes.append({"etape": cle, "ok": False, "erreur": e.detail})
+            return {}
+
+    # 1. mode sol (au cas où le balayage aurait basculé en desktop)
+    await _tenter(CMD_SET_ROBOT_MODE, {"robot_mode": "ground"}, "mode_ground")
+    state.modes["robot_mode"] = "ground"
+    # 2. couper l'autonome et les actions aléatoires qui écrasent le redressement
+    await _tenter(CMD_BEHAVIOR_PAUSE, {"paused": True}, "autonome_pause")
+    state.modes["autonomous"] = False
+    await _tenter(CMD_RANDOM_ACTION, {"enabled": False}, "aleatoire_off")
+    state.modes["random_action"] = False
+    # 3. redressement tenu : returnPosition, priorité 5, couple maxi, rejoué
+    debout = {"file_path": ACTION_RESET_FILE, "loop": False,
+              "priority": RESET_PRIORITY, "torque": RESET_TORQUE}
+    r = await _tenter(CMD_PLAY, debout, "debout")
+    await asyncio.sleep(1.2)
+    await _tenter(CMD_PLAY, debout, "debout_tenu")
+    await maj_posture("stand", "commande")
+    return {"ok": all(e["ok"] for e in etapes), "etapes": etapes,
+            "note": "Si c'est le tout premier réveil après mise sous tension, "
+                    "il faut d'abord balayer l'écran de la tête vers le haut — "
+                    "aucune commande ne remplace ce geste."}
 
 
 # ═══════════════════════════ posture debout / au sol ═══════════════════════════
@@ -1120,6 +1173,37 @@ async def play(p: ActionIn):
     if r.get("success"):
         # on connaît le nom joué : la posture s'en DÉDUIT (elle n'est pas commandée)
         await maj_posture(deduire_posture(p.name), "deduit")
+    return _wrap(r, CMD_PLAY)
+
+
+class PlayExIn(BaseModel):
+    name: str                       # nom de l'action (sans chemin ni extension)
+    loop: bool = False              # boucler l'animation (l'éditeur d'enchaînements
+                                    # boucle une anim le temps d'un bloc puis annule)
+    priority: int = RESET_PRIORITY  # ≥5 : sinon écrasée par le comportement autonome
+    torque: int = 0                 # 0 = laisse le couple par défaut de l'action
+
+
+@app.post("/api/action/play_ex")
+async def play_ex(p: PlayExIn):
+    """
+    Joue une action avec loop + priorité (forme file_path), pour l'éditeur
+    d'enchaînements. `/api/action/play` classique ne transporte QUE le nom (pas
+    de priorité), donc une action y est vite écrasée par l'autonome. Ici on
+    reconstruit le chemin comme le bouton Reset et on force la priorité.
+    """
+    if state.safety["tripped"]:
+        raise HTTPException(423, "Sécurité déclenchée — réarmer d'abord.")
+    nom = (p.name or "").strip().strip("/")
+    if not nom:
+        raise HTTPException(422, "nom d'action vide.")
+    data = {"file_path": "%s/%s.avi" % (ACTION_BASE_PATH, nom),
+            "loop": bool(p.loop), "priority": int(p.priority)}
+    if p.torque and p.torque > 0:
+        data["torque"] = int(p.torque)
+    r = await link.request(CMD_PLAY, data)
+    if r.get("success"):
+        await maj_posture(deduire_posture(nom), "deduit")
     return _wrap(r, CMD_PLAY)
 
 
@@ -1409,9 +1493,13 @@ def _deamb_base() -> str:
 
 
 async def _deamb(methode: str, chemin: str, params: dict | None = None):
+    # Délai COURT (1,2 s) : ce service est interrogé en continu par la page. S'il
+    # n'est pas lancé à bord, un délai long faisait s'empiler les requêtes mortes
+    # et engorgeait tout le helper (constaté le 28/07 : ~2,2 s par appel, 5 appels
+    # par seconde). Mieux vaut échouer vite et laisser la page espacer ses essais.
     url = _deamb_base() + chemin
     try:
-        async with httpx.AsyncClient(timeout=4) as c:
+        async with httpx.AsyncClient(timeout=1.2) as c:
             r = await c.request(methode, url, params=params)
     except httpx.HTTPError:
         raise HTTPException(
@@ -1446,7 +1534,379 @@ async def deambulation_vitesse(v: float):
     return await _deamb("POST", "/vitesse", {"v": v})
 
 
+@app.get("/api/deambulation/animations")
+async def deambulation_animations_get():
+    """Mapping événement→animation d'évitement courant, relu sur le robot."""
+    return await _deamb("GET", "/animations")
+
+
+@app.post("/api/deambulation/animations")
+async def deambulation_animations_set(mapping: dict):
+    """Règle les animations d'évitement. Corps JSON {événement: action|null},
+    ex. {"approche": "stand_default_peer_brief", "bloque": null}. Contrairement
+    aux autres routes, on transmet un CORPS JSON (et non des paramètres), d'où ce
+    passe-plat écrit à la main plutôt que via `_deamb`."""
+    url = _deamb_base() + "/animations"
+    try:
+        async with httpx.AsyncClient(timeout=4) as c:
+            r = await c.post(url, json=mapping)
+    except httpx.HTTPError:
+        raise HTTPException(
+            503, "Service de déambulation injoignable. Sur le robot : "
+                 "python3 deambulation.py --service")
+    if r.status_code >= 400:
+        raise HTTPException(r.status_code, r.text[:200])
+    return JSONResponse(r.json())
+
+
+# ═══════════════════════════ écran de la tête ═══════════════════════════
+# lvgl_gui_node n'expose que des SERVICES ROS : injoignables depuis le helper,
+# qui ne parle que WebSocket. On passe donc par le nœud embarqué (deambulation.py
+# --service), qui tourne dans ROS et relaie. Le service doit être lancé à bord.
+@app.get("/api/ecran/contenus")
+async def ecran_contenus():
+    """Animations installées sur le robot (Lottie et GIF)."""
+    return await _deamb("GET", "/ecran/contenus")
+
+
+async def _ecran_post(quoi: str, corps: dict):
+    url = _deamb_base() + "/ecran/" + quoi
+    try:
+        async with httpx.AsyncClient(timeout=6) as c:
+            r = await c.post(url, json=corps)
+    except httpx.HTTPError:
+        raise HTTPException(503, "Service embarqué injoignable. Sur le robot : "
+                                 "python3 deambulation.py --service")
+    if r.status_code >= 400:
+        raise HTTPException(r.status_code, r.text[:200])
+    return JSONResponse(r.json())
+
+
+@app.post("/api/ecran/toast")
+async def ecran_toast(corps: dict):
+    """Affiche un message texte sur l'écran de la tête."""
+    return await _ecran_post("toast", corps)
+
+
+@app.post("/api/ecran/lottie")
+async def ecran_lottie(corps: dict):
+    """Joue une animation Lottie (bibliothèque /root/material/lottie)."""
+    return await _ecran_post("lottie", corps)
+
+
+@app.post("/api/ecran/gif")
+async def ecran_gif(corps: dict):
+    """Joue un GIF (bibliothèque /root/material/gif)."""
+    return await _ecran_post("gif", corps)
+
+
+# ═══════════════════════ enchaînements (Play Blocks) ═══════════════════════
+# L'éditeur d'enchaînements enregistre ses séquences et groupes ICI, dans un
+# fichier à côté du helper, plutôt que seulement dans le navigateur : ainsi ils
+# survivent à un changement de navigateur, se partagent avec le kit, et se
+# retrouvent depuis n'importe quel poste qui parle à ce helper. Le navigateur
+# garde une copie locale comme cache hors-ligne.
+ENCHAIN_DATA = Path(__file__).resolve().parent / "enchainements_data.json"
+
+
+@app.get("/api/enchainements")
+async def enchainements_get():
+    """Séquences + groupes enregistrés sur le PC (vide si aucun)."""
+    if not ENCHAIN_DATA.is_file():
+        return JSONResponse({"groups": [], "sequence": [], "loop": False})
+    try:
+        return JSONResponse(json.loads(ENCHAIN_DATA.read_text(encoding="utf-8")))
+    except (OSError, ValueError) as e:
+        raise HTTPException(500, f"Lecture impossible : {e}")
+
+
+@app.post("/api/enchainements")
+async def enchainements_set(data: dict):
+    """Enregistre séquences + groupes sur le PC (corps JSON)."""
+    try:
+        ENCHAIN_DATA.write_text(json.dumps(data, ensure_ascii=False, indent=2),
+                                encoding="utf-8")
+    except OSError as e:
+        raise HTTPException(500, f"Écriture impossible ({ENCHAIN_DATA.name}) : {e}")
+    return {"ok": True, "fichier": str(ENCHAIN_DATA)}
+
+
 # La page elle-même. Elle est autonome (un seul fichier, aucun assemblage) et
+# ═══════════════════════════ yeux (écran de la tête) ═══════════════════════════
+# L'écran de la tête reçoit la pose des yeux par une voie UDP dédiée (port 8770,
+# user_interface_udp_server_node). Une trame = un objet JSON à 4 « bones » :
+# l'iris et la pupille (position sur l'écran, dilatation, rotation), et les deux
+# paupières (haute/basse = clignement). Format relevé sur le script Blender du
+# constructeur — connu au bit près, mais l'EFFET n'a pas encore été filmé sur le
+# robot : à vérifier au premier essai.
+# ✅ RELEVÉ SUR LE ROBOT le 28/07 (ss -ulnp) : un SEUL port UDP écoute,
+#    0.0.0.0:8768 — tenu par user_interface_udp_server_node. Les ports 8770
+#    (face_ui), 8769 (overlay) et 8772 (pondération) du script Blender ne sont
+#    PAS ouverts sur le firmware 2.5.0. C'est la cause de l'absence d'effet :
+#    l'UDP ne signale jamais un port fermé, les trames partaient dans le vide.
+#    Le serveur unique aiguille donc selon le CONTENU du message.
+EYES_UDP_PORT = 8768      # canal unique, confirmé en écoute
+EYES_OVERLAY_PORT = 8769  # ⏳ non ouvert sur ce firmware — gardé pour essai
+EYES_FACE_PORT = 8770     # ⏳ idem
+EYES_WEIGHT_PORT = 8768   # la pondération passe par le même serveur
+EYES_Y = 120        # amplitude gauche/droite (±)
+EYES_Z = 142        # amplitude haut/bas (±)
+# Valeurs NEUTRES relevées dans l'add-on d'export officiel (blender_export_addon,
+# fonction d'export des données d'interface) :
+#     default_z = -32 si eye_upper, sinon 63
+# Autrement dit, yeux OUVERTS = paupière haute à -32 et paupière basse à +63.
+# ⚠ Correction du 28/07 : on envoyait +75 / -75, soit les SIGNES INVERSÉS — les
+# deux paupières se croisaient, ce qui explique probablement l'absence d'effet.
+EYES_UPPER_OUVERT = -32
+EYES_LOWER_OUVERT = 63
+EYES_FERME = 16     # les deux paupières se rejoignent au milieu (-32 … 63)
+
+
+def _robot_ip_ou_409() -> str:
+    ip = (link.ip if link else None) or state.robot_ip
+    if not ip:
+        raise HTTPException(409, "Aucune adresse de robot — connecte-le d'abord "
+                                 "dans Studio 360.")
+    return ip
+
+
+class EyesIn(BaseModel):
+    pos_y: float = 0.0     # gauche(-)/droite(+)
+    pos_z: float = 0.0     # bas(-)/haut(+)
+    scale: float = 1.0     # 0..2 : dilatation de l'iris
+    rot_x: float = 0.0     # 0..359 : rotation de l'iris
+    blink: float = 0.0     # 0 = ouvert, 1 = fermé
+    canal: str = "face"    # "face" (8770) ou "overlay" (8769)
+
+
+class EyesPrioriteIn(BaseModel):
+    """Pondération entre l'animation interne du robot et le canal externe.
+    Reprise du script Blender du constructeur : {cmd:set_weight_params,
+    main_weight, channel2_weight}. Hypothèse à valider sur le robot : sans
+    donner la main au canal externe, le moteur d'émotion repeint l'écran en
+    continu et écrase ce qu'on envoie."""
+    main_weight: float = 0.0
+    channel2_weight: float = 1.0
+
+
+def _trame_yeux(p: EyesIn) -> dict:
+    cy = max(-EYES_Y, min(EYES_Y, float(p.pos_y)))
+    cz = max(-EYES_Z, min(EYES_Z, float(p.pos_z)))
+    sc = max(0.0, min(2.0, float(p.scale)))
+    rot = float(p.rot_x) % 360.0
+    t = max(0.0, min(1.0, float(p.blink)))          # 0 = ouvert, 1 = fermé
+    # les paupières partent de leur position ouverte et convergent vers le milieu
+    haut = EYES_UPPER_OUVERT + t * (EYES_FERME - EYES_UPPER_OUVERT)
+    bas = EYES_LOWER_OUVERT + t * (EYES_FERME - EYES_LOWER_OUVERT)
+    return {
+        "eye_iris":  {"pos_y": cy, "pos_z": cz, "scale_y": sc, "scale_z": sc, "rot_x": rot},
+        "eye_pupil": {"pos_y": cy, "pos_z": cz, "scale_y": sc, "scale_z": sc, "rot_x": rot},
+        "eye_upper": {"pos_z": round(haut), "scale_z": 1.0},
+        "eye_lower": {"pos_z": round(bas), "scale_z": 1.0},
+    }
+
+
+def _envoie_udp(ip: str, port: int, obj: dict):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.sendto(json.dumps(obj).encode("utf-8"), (ip, port))
+    finally:
+        s.close()
+
+
+@app.post("/api/eyes")
+async def eyes(p: EyesIn):
+    """Pose des yeux, envoyée en UDP à l'écran de la tête.
+
+    ⚠ Non confirmé sur le robot : l'UDP ne donne aucun accusé de réception, donc
+    un « ok » ici prouve seulement que la trame est partie du PC.
+    """
+    ip = _robot_ip_ou_409()
+    canal = (p.canal or "").lower()
+    port = {"overlay": EYES_OVERLAY_PORT, "face": EYES_FACE_PORT}.get(canal, EYES_UDP_PORT)
+    trame = _trame_yeux(p)
+    _envoie_udp(ip, port, trame)
+    return {"ok": True, "port": port, "envoye": trame}
+
+
+@app.post("/api/eyes/priorite")
+async def eyes_priorite(p: EyesPrioriteIn):
+    """Donne la main au canal externe sur l'écran (port 8772)."""
+    ip = _robot_ip_ou_409()
+    msg = {"cmd": "set_weight_params",
+           "main_weight": float(p.main_weight),
+           "channel2_weight": float(p.channel2_weight),
+           "timestamp": time.time()}
+    _envoie_udp(ip, EYES_WEIGHT_PORT, msg)
+    return {"ok": True, "envoye": msg}
+
+
+@app.post("/api/eyes/center")
+async def eyes_center():
+    """Recentre les yeux (regard neutre, paupières ouvertes)."""
+    ip = _robot_ip_ou_409()
+    _envoie_udp(ip, EYES_UDP_PORT, _trame_yeux(EyesIn()))
+    return {"ok": True}
+
+
+# ═══════════════════════════════ LED ═══════════════════════════════
+# Les LED ne sont accessibles NI par le WebSocket NI par le REST : la seule voie
+# connue est le canal UDP 8768, dont le nœud republie sur
+# /robot_led_controller/led_colors. Format relevé dans l'add-on Blender officiel
+# (get_led_data_for_frame) : deux LED de tête, six LED de corps, en RVB 0-255.
+#   {"head_led": [[r,g,b], [r,g,b]], "body_led": [[r,g,b] × 6]}
+# ⚠ L'UDP ne renvoie aucun accusé : un « ok » signifie que la trame est partie.
+LED_UDP_PORT = 8768
+LED_TETE = 2
+LED_CORPS = 6
+# Couleur d'origine relevée dans l'add-on officiel (valeurs de repli de
+# export_led_data) : un rouge profond, identique pour la tête et le corps.
+LED_DEFAUT = [194, 0, 0]
+
+
+class LedIn(BaseModel):
+    couleur: Optional[list] = None   # [r,g,b] appliqué à toutes les LED
+    head: Optional[list] = None      # 2 × [r,g,b] — prioritaire sur `couleur`
+    body: Optional[list] = None      # 6 × [r,g,b] — idem
+
+
+def _rvb(c) -> list:
+    """Normalise une couleur en [r,g,b] entiers 0-255."""
+    try:
+        r, v, b = (int(x) for x in list(c)[:3])
+    except Exception:
+        raise HTTPException(422, "couleur attendue sous la forme [r, v, b] (0-255).")
+    borne = lambda x: max(0, min(255, x))
+    return [borne(r), borne(v), borne(b)]
+
+
+def _serie(valeur, defaut, n) -> list:
+    """n couleurs : soit la liste fournie (complétée), soit `defaut` répété."""
+    if not valeur:
+        return [list(defaut) for _ in range(n)]
+    out = [_rvb(c) for c in valeur][:n]
+    while len(out) < n:
+        out.append(list(out[-1] if out else defaut))
+    return out
+
+
+@app.post("/api/led/defaut")
+async def led_defaut():
+    """Remet les LED à la couleur d'origine du constructeur (194, 0, 0)."""
+    ip = _robot_ip_ou_409()
+    trame = {"head_led": [list(LED_DEFAUT) for _ in range(LED_TETE)],
+             "body_led": [list(LED_DEFAUT) for _ in range(LED_CORPS)]}
+    _envoie_udp(ip, LED_UDP_PORT, trame)
+    return {"ok": True, "couleur": LED_DEFAUT, "envoye": trame}
+
+
+@app.post("/api/led")
+async def led(p: LedIn):
+    """Allume les LED (2 à la tête, 6 sur le corps) via le canal UDP 8768."""
+    ip = _robot_ip_ou_409()
+    base = _rvb(p.couleur) if p.couleur else [0, 0, 0]
+    trame = {"head_led": _serie(p.head, base, LED_TETE),
+             "body_led": _serie(p.body, base, LED_CORPS)}
+    _envoie_udp(ip, LED_UDP_PORT, trame)
+    return {"ok": True, "envoye": trame}
+
+
+# ═══════════════════════════ marche pas-à-pas ═══════════════════════════
+# gait_step_move : le robot exécute un NOMBRE de foulées donné puis s'arrête de
+# lui-même — plus sûr qu'un flux gait_control continu qu'il faut penser à couper.
+# Vitesse NORMALISÉE [-1,1] comme gait_control (viser ~0,45, pas 0,10).
+class StepIn(BaseModel):
+    linear_x: float = 0.0
+    linear_y: float = 0.0
+    angular_z: float = 0.0
+    steps: int = 1
+
+
+@app.post("/api/step")
+async def step(p: StepIn):
+    """Avance/tourne d'un nombre borné de foulées (gait_step_move)."""
+    if state.safety["tripped"]:
+        raise HTTPException(423, f"Sécurité déclenchée : {state.safety['reason']}. "
+                                 f"Réarmer via POST /api/safety/clear.")
+    clamp = lambda v: max(-1.0, min(1.0, float(v)))
+    charge = {"linear_x": clamp(p.linear_x), "linear_y": clamp(p.linear_y),
+              "angular_z": clamp(p.angular_z), "steps": max(1, min(20, int(p.steps)))}
+    r = await link.request(CMD_STEP, charge)
+    out = _wrap(r, CMD_STEP)
+    out["envoye"] = charge
+    return out
+
+
+# ═══════════════════ passe-plats REST (unified_api_node :8088) ═══════════════════
+@app.get("/api/logs")
+async def logs():
+    """Journaux du robot, sans SSH (REST 8088)."""
+    if not state.robot_ip:
+        raise HTTPException(503, "Robot non connecté")
+    url = f"http://{state.robot_ip}:{ROBOT_REST_PORT}/api/v1/logs/"
+    try:
+        async with httpx.AsyncClient(timeout=6) as c:
+            r = await c.get(url)
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"Logs injoignables : {e}")
+    return JSONResponse(status_code=r.status_code, content=_json_or_text(r))
+
+
+@app.post("/api/ai/clear_history")
+async def ai_clear_history():
+    """Réinitialise la mémoire du dialogue IA (REST 8088)."""
+    if not state.robot_ip:
+        raise HTTPException(503, "Robot non connecté")
+    url = f"http://{state.robot_ip}:{ROBOT_REST_PORT}/api/v1/ai/character/clear-history"
+    try:
+        async with httpx.AsyncClient(timeout=6) as c:
+            r = await c.post(url)
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"Requête impossible : {e}")
+    return JSONResponse(status_code=r.status_code, content=_json_or_text(r))
+
+
+# ═══════════════════════════════ volume audio ═══════════════════════════════
+# Le volume est un PARAMÈTRE ROS `audio_volume` (entier 0-100) du nœud
+# `wmix_audio_player_node`, réglé par la commande USER_SET_NODE_PARAMETER.
+# Trame capturée le 28/07 sur l'interface officielle Hengbot (WebSocket 8765) :
+#   {"type":"request","request_type":"USER_SET_NODE_PARAMETER",
+#    "data":{"node_name":"wmix_audio_player_node",
+#            "parameter_name":"audio_volume","parameter_value":54}}
+CMD_SET_NODE_PARAM = "USER_SET_NODE_PARAMETER"   # ✅ capturé sur l'appli officielle
+CMD_GET_NODE_PARAM = "USER_GET_NODE_PARAMETER"   # ⏳ symétrique, non capturé
+AUDIO_NODE = "wmix_audio_player_node"
+AUDIO_PARAM = "audio_volume"
+
+
+class VolumeIn(BaseModel):
+    value: int                                   # 0-100
+
+
+@app.get("/api/volume")
+async def get_volume():
+    """Lit le volume audio courant (0-100). Symétrique du set — non capturé,
+    donc l'extraction de la valeur est tolérante à la forme de la réponse."""
+    r = await link.request(CMD_GET_NODE_PARAM,
+                           {"node_name": AUDIO_NODE, "parameter_name": AUDIO_PARAM})
+    out = _wrap(r, CMD_GET_NODE_PARAM)
+    d = r.get("data") or {}
+    out["value"] = d.get("parameter_value", d.get("value"))
+    return out
+
+
+@app.post("/api/volume")
+async def set_volume(p: VolumeIn):
+    """Règle le volume audio (0-100). Commande vérifiée sur l'interface officielle."""
+    v = max(0, min(100, int(p.value)))
+    r = await link.request(CMD_SET_NODE_PARAM,
+                           {"node_name": AUDIO_NODE, "parameter_name": AUDIO_PARAM,
+                            "parameter_value": v})
+    out = _wrap(r, CMD_SET_NODE_PARAM)
+    out["value"] = v
+    return out
+
+
 # vit à côté de ce script ; le montage de l'interface React, plus bas, ne la
 # voit pas puisque cette route est déclarée avant lui.
 DEAMB_PAGE = Path(__file__).resolve().parent / "deambulation.html"
@@ -1457,6 +1917,48 @@ async def deambulation_page():
     if not DEAMB_PAGE.is_file():
         raise HTTPException(404, "deambulation.html absent du dossier du kit")
     return FileResponse(str(DEAMB_PAGE), media_type="text/html; charset=utf-8",
+                        headers={"Cache-Control": "no-store"})
+
+
+# L'éditeur d'enchaînements de comportement (« Play Blocks »), servi comme la
+# page de déambulation : autonome, à côté de ce script.
+ENCHAIN_PAGE = Path(__file__).resolve().parent / "enchainements.html"
+
+
+@app.get("/enchainements")
+async def enchainements_page():
+    if not ENCHAIN_PAGE.is_file():
+        raise HTTPException(404, "enchainements.html absent du dossier du kit")
+    return FileResponse(str(ENCHAIN_PAGE), media_type="text/html; charset=utf-8",
+                        headers={"Cache-Control": "no-store"})
+
+
+YEUX_PAGE = Path(__file__).resolve().parent / "yeux.html"
+TABLEAU_PAGE = Path(__file__).resolve().parent / "tableau.html"
+ACCUEIL_PAGE = Path(__file__).resolve().parent / "accueil.html"
+
+
+@app.get("/accueil")
+async def accueil_page():
+    if not ACCUEIL_PAGE.is_file():
+        raise HTTPException(404, "accueil.html absent du dossier du kit")
+    return FileResponse(str(ACCUEIL_PAGE), media_type="text/html; charset=utf-8",
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.get("/yeux")
+async def yeux_page():
+    if not YEUX_PAGE.is_file():
+        raise HTTPException(404, "yeux.html absent du dossier du kit")
+    return FileResponse(str(YEUX_PAGE), media_type="text/html; charset=utf-8",
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.get("/tableau")
+async def tableau_page():
+    if not TABLEAU_PAGE.is_file():
+        raise HTTPException(404, "tableau.html absent du dossier du kit")
+    return FileResponse(str(TABLEAU_PAGE), media_type="text/html; charset=utf-8",
                         headers={"Cache-Control": "no-store"})
 
 

@@ -92,6 +92,93 @@ inaccessible.
 Hors table (noms en minuscules uniquement) : `gait_control`, `gait_step_move`,
 `attitude_control`, `self_recover`, `set_motion_mode`.
 
+### Capture du 28/07 — trames réelles de l'interface officielle ✅
+
+En écoutant les trames SORTANTES du WebSocket de l'interface officielle Hengbot
+(connectée au robot, `ws://<ip>:8765/?audience=web`), on a relevé le format
+exact de plusieurs commandes. **Enveloppe confirmée identique à la nôtre** :
+`{"type":"request","request_id":"req_<horodatage>_<n>","request_type":<CLÉ>,"data":{…}}`.
+
+- **`USER_SET_NODE_PARAMETER`** — `{node_name, parameter_name, parameter_value}` ✅.
+  C'est le mécanisme qui règle le **VOLUME** :
+  `{node_name:"wmix_audio_player_node", parameter_name:"audio_volume", parameter_value:<entier 0-100>}`.
+  Ouvre en principe le réglage de tout paramètre ROS exposé par un nœud.
+- **`ACTION_PLAY`** — `{file_path, loop, priority, torque}` ✅ (relevé :
+  `/root/material/actions/stand_default_littleBark_brief.avi`, `loop:false`,
+  `priority:3`, `torque:2047`). ⚠ Sur l'interface officielle, changer le volume
+  déclenche cette action « petit aboiement » en aperçu sonore : le robot se lève
+  et aboie. Ce n'est donc pas un dysfonctionnement.
+- **`OTA_CHECK_UPDATE`** `{}`, **`OTA_GET_STATUS`** `{}`, **`OTA_GET_CONFIG`** `{}`,
+  **`OTA_LIST_VERSIONS`** `{channel}` ✅ (lectures, chargées par la page « System Update »).
+- **`LIFECYCLE_GET_STATES`** `{}` ✅ (page « Node Management »).
+- **`GET_AI_STATE`** `{}`, **`USER_GET_LANGUAGE`** `{}` ✅ (lectures au chargement).
+- Battement de cœur : `{"type":"ping","data":{"timestamp":<ms>}}`, ~1 Hz.
+
+Non capturé (volontairement pas déclenché, pour ne pas faire bouger le robot) :
+les SET de mode/allure (`set_motion_mode`), `MOTOR_*`, MBTI/langue/thème en
+écriture, `BEHAVIOR_SET_ORCHESTRATION_MODE`. Restent au statut « déduit ».
+
+### Le canal UDP 8768 — et pourquoi les YEUX ne répondent pas ✅
+
+Relevé **sur le robot** le 28/07 (firmware 2.5.0), en SSH.
+
+**Un seul port UDP écoute** : `0.0.0.0:8768`, tenu par
+`user_interface_udp_server_node`. Les ports du script Blender du constructeur —
+8770 (`face_ui`), 8769 (overlay), 8772 (pondération `set_weight_params`) — ne
+sont **pas ouverts**. Comme l'UDP ne signale jamais un port fermé, toute trame
+qu'on y envoie disparaît en silence : c'est le piège qui nous a coûté du temps.
+
+**Ce que ce canal pilote réellement** (topics publiés par ce nœud) :
+
+| Topic publié | Type | Intérêt |
+|---|---|---|
+| `/gait_generation_trot/cmd_vel` | `geometry_msgs/Twist` | marche |
+| `/kinematics/ik_subscriber/body_pose` | `Pose` | assiette du corps |
+| `/kinematics/ik_subscriber/head_quaternion` | `Quaternion` | tête |
+| `/kinematics/ik_subscriber/{left,right}_{front,back}_point` | `Point` | pattes |
+| `/robot_led_controller/led_colors` | `String` | **LED** (aucun autre accès connu) |
+| `/lvgl_layer` | `String` | l'écran / les yeux — **orphelin, voir ci-dessous** |
+| `/udp_server/status` | `UInt8` | état du serveur |
+
+**Les yeux : conclusion définitive (négative).** Le binaire du serveur contient
+bien les clés `eye_iris`, `eye_upper`, `eye_lower`, `head_led` — notre format
+était donc correct. Il republie ces données sur `/lvgl_layer`. Mais :
+
+```
+$ ros2 topic info /lvgl_layer
+Type: std_msgs/msg/String
+Publisher count: 2
+Subscription count: 0
+```
+
+**Zéro abonné**, et `lvgl_gui_node` (qui tient l'écran) ne figure pas parmi les
+abonnés. Le chemin existe côté émetteur mais **plus personne ne le consomme sur
+ce firmware** : piloter les pupilles par UDP est impossible, quel que soit le
+port, le format ou l'ordre des messages. Le rig des yeux (`eye_upper`,
+`eye_lower`, `eye_pupil`, `eye_iris`) sert en revanche à l'authoring Blender :
+l'add-on d'export embarque les données d'yeux **dans les fichiers d'action**
+(valeurs neutres relevées : `eye_upper` = −32, `eye_lower` = 63). L'écran est
+donc animé par le lecteur d'actions et le moteur d'émotion, pas de l'extérieur.
+
+**Ce qui, en revanche, pilote l'écran** — services ROS actifs :
+`/lvgl_gui_node/play_lottie`, `/play_gif`, `/lvgl_gui/show_toast`,
+`/show_dialog`, `/show_ip_address`, `/camera_display/toggle`.
+
+**Et les émotions** : `/emotion_manager/set_emotion_state`,
+`/adjust_emotion`, `/adjust_satiety` **existent en ROS**, alors que la commande
+WebSocket équivalente répond « service_unavailable ». À sonder : la voie ROS
+pourrait rendre l'humeur commandable, contrairement à ce qu'on avait conclu.
+
+**Trace du sommeil (capturée le 28/07).** Sous *Autonomous Mode*, l'événement
+`emotion-update` montre `emotion_state:"sleeping"`, `valence_value:50`,
+`fatigue_status:0` et surtout un **`arousal_value` ≈ 3/100 qui décroît à chaque
+trame** ; en parallèle le moteur de comportement joue en boucle l'action
+`lie_sleep_idle`. C'est la mécanique du couchage : l'éveil décroît avec le temps
+→ état `sleeping` → `lie_sleep_idle` (le robot se couche). Une stimulation
+(aboiement, toucher, son) remonte l'éveil, il se relève, puis l'éveil redescend
+et il se recouche. Le bouton « Debout » de notre outil (pause de l'autonome +
+`returnPosition` tenu) est la parade.
+
 ---
 
 ## 3. ⚠️ Déplacement : la vitesse est NORMALISÉE, pas en m/s

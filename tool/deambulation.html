@@ -54,8 +54,25 @@
   }
   .banner b { color:var(--text-primary); }
   .banner .ico { color:var(--warning); flex:none; font-size:15px; line-height:1.4; }
-  .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
-  @media (max-width:900px){ .cols{ grid-template-columns:1fr; } }
+  /* trois colonnes : voir · mesurer · agir. Se replie à 2 puis 1. */
+  .cols3 { display:grid; grid-template-columns:1.15fr 1fr 0.9fr; gap:14px; align-items:start; }
+  @media (max-width:1200px){ .cols3{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:820px){ .cols3{ grid-template-columns:1fr; } }
+  .stack { display:flex; flex-direction:column; gap:14px; }
+  /* barre de commandes compacte */
+  .barre { display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;
+           background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:10px 12px; }
+  .barre .sep { flex:1 1 auto; }
+  .barre .liens { display:flex;gap:12px;flex-wrap:wrap;align-items:center; }
+  /* avertissement discret mais présent */
+  .avert { display:flex;gap:9px;align-items:baseline;padding:8px 12px;border-radius:10px;
+           background:color-mix(in srgb, var(--warning) 10%, var(--surface-1));
+           border:1px solid color-mix(in srgb, var(--warning) 32%, transparent);
+           margin-bottom:14px; font-size:12.5px; color:var(--text-secondary); }
+  .avert b { color:var(--text-primary); }
+  .avert .ico { color:var(--warning); }
+  .avert summary { cursor:pointer; color:var(--text-muted); }
+  .avert details { margin-top:5px; }
   .card { background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:15px; }
   .card h2 { font-size:12px;letter-spacing:.08em;text-transform:uppercase;
              color:var(--text-muted);margin:0 0 12px;font-weight:600; }
@@ -69,6 +86,15 @@
   #go { background:var(--accent-fill);border-color:transparent;color:#04161b; }
   #stop { background:var(--critical);border-color:transparent;color:#fff;
           padding:11px 26px;font-size:16px; }
+  #wake { background:color-mix(in srgb, var(--warning) 20%, var(--surface-2)); }
+  .editlink { color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap; }
+  .editlink:hover { text-decoration:underline; }
+  .steprow { display:flex;align-items:center;gap:10px;margin-bottom:12px; }
+  .stepsel { display:flex;gap:6px; }
+  .stepsel button { min-height:36px;padding:6px 14px; }
+  .stepsel button.on { background:var(--accent-fill);border-color:transparent;color:#04161b; }
+  .pad3 { display:grid;grid-template-columns:repeat(3,64px);grid-auto-rows:56px;gap:8px;justify-content:start; }
+  .pad3 .pd { font-size:18px;min-height:56px;padding:0; }
   .slider { display:flex;align-items:center;gap:10px;flex:1 1 230px;min-width:200px; }
   .slider input { flex:1; accent-color:var(--accent); min-height:34px; }
   .slider label { font-size:13px;color:var(--text-secondary);white-space:nowrap; }
@@ -77,6 +103,35 @@
                aspect-ratio:16/9;display:grid;place-items:center; }
   .videowrap video { width:100%;height:100%;object-fit:cover;display:block; }
   .vidmsg { position:absolute;color:var(--text-muted);font-size:13px;text-align:center;padding:16px; }
+  /* En-tête de carte avec un contrôle à droite (l'interrupteur caméra). */
+  .cardhead { display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px; }
+  .cardhead h2 { margin:0; }
+  /* — interrupteur (caméra) — reprend les jetons de Studio 360 — */
+  .switch { display:inline-flex;align-items:center;gap:8px;min-height:34px;
+            padding:5px 13px 5px 6px;border-radius:999px;border:1px solid var(--border-strong);
+            background:var(--surface-2);color:var(--text-secondary);
+            font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
+            text-transform:none;letter-spacing:0;cursor:pointer; }
+  .switch:hover:not(:disabled){ background:var(--surface-3); }
+  .switch:disabled{ opacity:.5;cursor:progress; }
+  .switch .knob { width:34px;height:18px;border-radius:999px;flex:none;position:relative;
+                  background:var(--surface-3);border:1px solid var(--border-strong);
+                  transition:background .15s; }
+  .switch .knob::after { content:"";position:absolute;top:1px;left:1px;width:14px;height:14px;
+                         border-radius:50%;background:var(--text-muted);
+                         transition:transform .15s,background .15s; }
+  .switch.on { color:var(--text-primary);border-color:transparent;
+               background:color-mix(in srgb, var(--good) 20%, var(--surface-2)); }
+  .switch.on:hover:not(:disabled){ background:color-mix(in srgb, var(--good) 28%, var(--surface-2)); }
+  .switch.on .knob { background:color-mix(in srgb, var(--good) 55%, var(--surface-3));
+                     border-color:transparent; }
+  .switch.on .knob::after { transform:translateX(16px);background:#fff; }
+  /* — animations d'évitement — */
+  .animrow { display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap; }
+  .animrow .lab { min-width:190px;color:var(--text-secondary);font-size:13.5px; }
+  .animrow select { flex:1;min-width:180px;min-height:40px;border-radius:9px;
+                    border:1px solid var(--border-strong);background:var(--surface-2);
+                    color:var(--text-primary);font:inherit;padding:0 10px; }
   /* — grille ToF — */
   .grid4 { display:grid;grid-template-columns:repeat(4,1fr);gap:2px;  /* 2px : le fond fait le séparateur */
            background:transparent; }
@@ -104,7 +159,7 @@
   .hero { display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px; }
   .hero .etat { font-size:27px;font-weight:680;letter-spacing:-.01em; }
   .motif { color:var(--text-secondary);font-size:13.5px;margin-bottom:14px;min-height:20px; }
-  .tiles { display:grid;grid-template-columns:repeat(auto-fit,minmax(136px,1fr));gap:9px; }
+  .tiles { display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px; }
   .tile { background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:10px 11px; }
   .tile .k { font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em; }
   .tile .v { font-size:18px;font-weight:640;margin-top:3px;font-variant-numeric:tabular-nums; }
@@ -126,6 +181,10 @@
   body.embed { background:transparent; }
   body.embed > header, body.embed footer { display:none; }
   body.embed main { padding:0; }
+  /* Dans la coquille à onglets (?shell=1), la navigation est déjà fournie :
+     on masque nos liens. Encastrée AILLEURS (onglet Déambulation de l'interface
+     principale), on les garde — sinon les autres outils seraient inatteignables. */
+  body.shell .editlink { display:none; }
 </style>
 </head>
 <body>
@@ -142,82 +201,135 @@
 </header>
 
 <main>
-  <div class="banner">
-    <span class="ico">⚠</span>
-    <div>
-      <b>Au sol, espace dégagé, loin de tout bord ou escalier.</b>
-      Le robot évite les obstacles et surveille le vide, mais la détection de vide
-      <b>n'a pas encore été éprouvée au bord d'une vraie table</b> : ne le laisse pas
-      circuler près d'un dénivelé. Garde une main à portée — le bouton
-      <b>Arrêter</b> coupe la marche et remet les consignes à zéro.
-    </div>
-  </div>
-
-  <div class="cmds">
+  <div class="barre">
     <button id="go">Démarrer</button>
     <button id="stop">Arrêter</button>
+    <button id="wake" title="Réveille et fige le robot debout (comportement autonome en pause, mode sol)">Réveil / Debout</button>
     <div class="slider">
       <label for="sp">Vitesse</label>
       <input type="range" id="sp" min="0.10" max="0.80" step="0.05" value="0.45">
       <label id="spval" style="min-width:38px;text-align:right">0.45</label>
     </div>
+    <span class="sep"></span>
+    <span class="liens">
+      <a class="editlink" href="/" target="_top">← Interface principale</a>
+      <a class="editlink" href="/accueil" target="_top">Tous les outils ↗</a>
+    </span>
   </div>
 
-  <div class="cols">
-    <section class="card">
-      <h2>Ce qu'il voit</h2>
-      <div class="videowrap">
-        <video id="vid" autoplay playsinline muted></video>
-        <div class="vidmsg" id="vidmsg">Connexion au flux vidéo…</div>
-      </div>
-      <div class="hero" style="margin-top:15px">
-        <span class="etat" id="etat">—</span>
-        <span class="chip" id="chip-marche">à l'arrêt</span>
-      </div>
-      <div class="motif" id="motif">En attente du service de déambulation…</div>
-      <div class="tiles">
-        <div class="tile"><div class="k">Obstacle</div>
-          <div class="v" id="t-obst">—<span class="u"> mm</span></div></div>
-        <div class="tile"><div class="k">Consigne</div>
-          <div class="v" id="t-vx">—</div></div>
-        <div class="tile"><div class="k">Mesuré</div>
-          <div class="v" id="t-mes">—</div></div>
-        <div class="tile"><div class="k">Batterie</div>
-          <div class="v" id="t-bat">—<span class="u"> %</span></div></div>
-        <div class="tile"><div class="k">Fraîcheur ToF</div>
-          <div class="v" id="t-fr">—<span class="u"> s</span></div></div>
-      </div>
-    </section>
+  <div class="avert">
+    <span class="ico">⚠</span>
+    <div>
+      <b>Sol plat et dégagé, loin de tout bord ou escalier.</b> <b>Arrêter</b> coupe la marche.
+      <details><summary>pourquoi cette prudence</summary>
+        Le robot évite les obstacles et surveille le vide, mais la détection de vide
+        <b>n'a jamais été éprouvée au bord d'une vraie table</b> : ne le laisse pas circuler
+        près d'un dénivelé, et garde une main à portée.</details>
+    </div>
+  </div>
 
-    <section class="card">
-      <h2>Champ du capteur — 16 distances, en millimètres</h2>
-      <div class="rowlabel">haut du champ — l'horizon, tout obstacle vertical</div>
-      <div class="grid4" id="grid"></div>
-      <div class="rowlabel">bas du champ — le sol devant les pattes</div>
+  <div class="cols3">
+    <!-- colonne 1 : voir -->
+    <div class="stack">
+      <section class="card">
+        <div class="cardhead">
+          <h2>Ce qu'il voit</h2>
+          <button id="cam" class="switch" type="button" role="switch" aria-pressed="false"
+                  title="Allumer / éteindre la caméra du robot">
+            <span class="knob" aria-hidden="true"></span><span class="lbl">Caméra éteinte</span>
+          </button>
+        </div>
+        <div class="videowrap">
+          <video id="vid" autoplay playsinline muted></video>
+          <div class="vidmsg" id="vidmsg">Caméra éteinte — appuie sur « Caméra » pour voir le flux.</div>
+        </div>
+        <div class="hero" style="margin-top:13px">
+          <span class="etat" id="etat">—</span>
+          <span class="chip" id="chip-marche">à l'arrêt</span>
+        </div>
+        <div class="motif" id="motif">En attente du service de déambulation…</div>
+        <div class="tiles">
+          <div class="tile"><div class="k">Obstacle</div>
+            <div class="v" id="t-obst">—<span class="u"> mm</span></div></div>
+          <div class="tile"><div class="k">Consigne</div>
+            <div class="v" id="t-vx">—</div></div>
+          <div class="tile"><div class="k">Mesuré</div>
+            <div class="v" id="t-mes">—</div></div>
+          <div class="tile"><div class="k">Batterie</div>
+            <div class="v" id="t-bat">—<span class="u"> %</span></div></div>
+          <div class="tile"><div class="k">Fraîcheur ToF</div>
+            <div class="v" id="t-fr">—<span class="u"> s</span></div></div>
+        </div>
+      </section>
+    </div>
 
-      <div class="legend">
-        <span>proche</span>
-        <span class="ramp">
-          <i style="background:var(--d1)"></i><i style="background:var(--d2)"></i>
-          <i style="background:var(--d3)"></i><i style="background:var(--d4)"></i>
-          <i style="background:var(--d5)"></i><i style="background:var(--d6)"></i>
-        </span>
-        <span>loin</span>
-        <span style="margin-left:4px">· ∞ = aucune cible (2047)</span>
-      </div>
-      <div class="statuskey">
-        <span><i class="sq" style="box-shadow:inset 0 0 0 2px var(--warning)"></i> ⬤ obstacle</span>
-        <span><i class="sq" style="box-shadow:inset 0 0 0 2px var(--critical)"></i> ▼ vide (sol perdu)</span>
-      </div>
+    <!-- colonne 2 : mesurer -->
+    <div class="stack">
+      <section class="card">
+        <h2>Champ du capteur — 16 distances (mm)</h2>
+        <div class="rowlabel">haut du champ — l'horizon, tout obstacle vertical</div>
+        <div class="grid4" id="grid"></div>
+        <div class="rowlabel">bas du champ — le sol devant les pattes</div>
+        <div class="legend">
+          <span>proche</span>
+          <span class="ramp">
+            <i style="background:var(--d1)"></i><i style="background:var(--d2)"></i>
+            <i style="background:var(--d3)"></i><i style="background:var(--d4)"></i>
+            <i style="background:var(--d5)"></i><i style="background:var(--d6)"></i>
+          </span>
+          <span>loin</span>
+          <span style="margin-left:4px">· ∞ = aucune cible</span>
+        </div>
+        <div class="statuskey">
+          <span><i class="sq" style="box-shadow:inset 0 0 0 2px var(--warning)"></i> ⬤ obstacle</span>
+          <span><i class="sq" style="box-shadow:inset 0 0 0 2px var(--critical)"></i> ▼ vide</span>
+        </div>
+        <details>
+          <summary>Voir les valeurs en tableau</summary>
+          <table class="tv" id="tv">
+            <thead><tr><th>Zone</th><th>Distance</th><th>Fond appris</th><th>État</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </details>
+      </section>
+    </div>
 
-      <details>
-        <summary>Voir les valeurs en tableau</summary>
-        <table class="tv" id="tv">
-          <thead><tr><th>Zone</th><th>Distance</th><th>Fond appris</th><th>État</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </details>
-    </section>
+    <!-- colonne 3 : agir -->
+    <div class="stack">
+      <section class="card">
+        <div class="cardhead"><h2>Marche pas-à-pas</h2></div>
+        <div class="sub" style="margin:-6px 0 10px">Déplacements bornés : le robot compte ses foulées et s'arrête seul.</div>
+        <div class="steprow">
+          <label class="sub">Foulées</label>
+          <div class="stepsel" id="stepsel">
+            <button data-steps="1" class="on">1</button><button data-steps="2">2</button>
+            <button data-steps="3">3</button><button data-steps="5">5</button>
+          </div>
+        </div>
+        <div class="pad3">
+          <button class="pd" data-dir="pivL" title="pivoter à gauche">↺</button>
+          <button class="pd" data-dir="fwd" title="avancer">▲</button>
+          <button class="pd" data-dir="pivR" title="pivoter à droite">↻</button>
+          <button class="pd" data-dir="left" title="pas à gauche">◀</button>
+          <button class="pd" data-dir="back" title="reculer">▼</button>
+          <button class="pd" data-dir="right" title="pas à droite">▶</button>
+        </div>
+        <div class="sub" id="step-status" style="margin-top:8px">Prêt.</div>
+      </section>
+
+      <section class="card" id="anim-card">
+        <div class="cardhead"><h2>Animations d'évitement</h2>
+          <span class="sub" id="anim-note"></span></div>
+        <div class="sub" style="margin:-6px 0 10px">
+          Jouée à l'approche d'un obstacle, avant le recul. Jamais au bord d'un vide.
+        </div>
+        <div id="anim-rows"></div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+          <button id="anim-save">Enregistrer</button>
+          <span class="sub" id="anim-status"></span>
+        </div>
+      </section>
+    </div>
   </div>
 
   <footer>
@@ -246,6 +358,10 @@ const ORDRE = [12,13,14,15, 8,9,10,11, 4,5,6,7, 0,1,2,3];
    masque pour ne pas les doubler — mais JAMAIS l'avertissement de sécurité. */
 const ENCASTREE = window.self !== window.top;
 if (ENCASTREE) document.body.classList.add("embed");
+// Dans la coquille à onglets : elle fournit déjà la navigation, on masque la nôtre.
+let DANS_COQUILLE = false;
+try { DANS_COQUILLE = new URLSearchParams(location.search).get("shell") === "1"; } catch(e) {}
+if (DANS_COQUILLE) document.body.classList.add("shell");
 
 /* ── thème ────────────────────────────────────────────────────────────────
    Même clé que Studio 360 (`sirius.theme`) : le thème choisi dans l'outil
@@ -405,21 +521,36 @@ function montreTip(e, i, clavier){
 // Déclaration de fonction (hissée) : la grille est bâtie plus haut et s'y réfère.
 function cacheTip(){ $("#tip").style.opacity = 0; }
 
-/* ── service ──────────────────────────────────────────────────────────── */
+/* ── service ──────────────────────────────────────────────────────────────
+   ⚠ Leçon du 28/07 : cette boucle interrogeait le robot toutes les 200 ms avec
+   un setInterval, SANS attendre la réponse. Quand le nœud de déambulation n'est
+   pas lancé à bord, chaque appel met ~2 s avant d'échouer : les requêtes mortes
+   s'empilaient (une dizaine en vol en permanence) et saturaient le helper — tout
+   le reste de l'interface (caméra, pas-à-pas, volume) devenait poussif.
+   Désormais : une seule requête en vol à la fois (boucle qui se replanifie), et
+   un ESPACEMENT PROGRESSIF en cas d'échec (0,2 s → 1 s → 2 s → 5 s), remis à
+   0,2 s dès que le service répond. */
+const PERIODE_OK = 200, PERIODE_MAX = 5000;
+let periode = PERIODE_OK, ticArme = null;
+
 async function tic(){
+  let ok = false;
   try {
     const r = await fetch(API + "/api/deambulation/etat", {cache:"no-store"});
     if (!r.ok) throw new Error("HTTP " + r.status);
     rendu(await r.json());
+    ok = true;
   } catch (err) {
-    lien(false, "service injoignable");
+    lien(false, "service de déambulation non lancé");
     $("#motif").innerHTML = "L'évitement tourne <b>à bord du robot</b> et n'y est pas "
-      + "encore déposé. Une fois : <code>scp deambulation.py root@&lt;IP&gt;:/root/</code> "
+      + "encore lancé. Une fois : <code>scp deambulation.py root@&lt;IP&gt;:/root/</code> "
       + "puis <code>python3 /root/deambulation.py --service</code>. "
-      + "Le fichier est dans ce kit, et le mode d'emploi dans LISEZMOI.md.";
+      + "Le reste de l'interface fonctionne normalement.";
   }
+  // succès → cadence nominale ; échec → on double l'attente, jusqu'à 5 s
+  periode = ok ? PERIODE_OK : Math.min(PERIODE_MAX, Math.max(1000, periode * 2));
+  ticArme = setTimeout(tic, periode);
 }
-setInterval(tic, 200);
 tic();
 
 async function envoie(chemin){
@@ -433,40 +564,132 @@ $("#stop").onclick = () => envoie("arreter");
 $("#sp").oninput   = (e) => { $("#spval").textContent = (+e.target.value).toFixed(2); };
 $("#sp").onchange  = (e) => envoie("vitesse?v=" + encodeURIComponent(e.target.value));
 
+// Réveil / Debout : réveille et fige le robot debout de façon robuste (mode sol,
+// autonome en pause, returnPosition tenu). Utile au premier démarrage, après le
+// balayage de l'écran de la tête, quand un simple « Debout » ne suffit pas.
+$("#wake").onclick = async () => {
+  const b = $("#wake"); b.disabled = true;
+  const avant = b.textContent; b.textContent = "Réveil…";
+  try {
+    const r = await fetch(API + "/api/reveil_debout", {method:"POST"});
+    $("#motif").textContent = r.ok
+      ? "Debout — comportement autonome en pause, mode sol. (Premier réveil : "
+        + "balaie d'abord l'écran de la tête vers le haut.)"
+      : "Réveil/Debout : le robot est-il connecté dans Studio 360 ?";
+  } catch (e) { lien(false, "commande refusée"); }
+  b.disabled = false; b.textContent = avant;
+};
+
+// Marche pas-à-pas : gait_step_move borné (le robot compte ses foulées).
+let stepN = 1;
+$("#stepsel").querySelectorAll("[data-steps]").forEach(b => b.onclick = () => {
+  stepN = +b.dataset.steps;
+  $("#stepsel").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+});
+const STEP_DIRS = {
+  fwd:{linear_x:0.5}, back:{linear_x:-0.5},
+  left:{linear_y:0.5}, right:{linear_y:-0.5},
+  pivL:{angular_z:0.6}, pivR:{angular_z:-0.6},
+};
+// Le robot exécute les foulées de façon SÉQUENTIELLE : tant qu'il marche, une
+// nouvelle consigne se met en file et « lague ». On bloque donc les boutons
+// pendant l'exécution (durée estimée ≈ 0,55 s/foulée) et on l'indique.
+let stepBusy = false;
+const MS_PAR_FOULEE = 550;
+function padDispo(ok){ document.querySelectorAll(".pad3 .pd").forEach(b => b.disabled = !ok); }
+document.querySelectorAll(".pad3 .pd").forEach(b => b.onclick = async () => {
+  if (stepBusy) return;
+  stepBusy = true; padDispo(false);
+  const body = Object.assign({linear_x:0, linear_y:0, angular_z:0},
+                             STEP_DIRS[b.dataset.dir] || {}, {steps: stepN});
+  $("#step-status").textContent = "En marche… (" + stepN + " foulée" + (stepN>1?"s":"") + ")";
+  let ok = false;
+  try {
+    const r = await fetch(API + "/api/step", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    ok = r.ok;
+  } catch (e) {}
+  // on laisse le robot finir ses foulées avant de réarmer les boutons
+  const attente = ok ? stepN * MS_PAR_FOULEE : 0;
+  setTimeout(() => {
+    stepBusy = false; padDispo(true);
+    $("#step-status").textContent = ok ? "Prêt." : "échec — robot connecté et en mode « sol » ?";
+  }, attente);
+});
+
 // Sécurité clavier : Échap et Espace arrêtent.
 addEventListener("keydown", (e) => {
   if (e.key === "Escape" || e.code === "Space") { e.preventDefault(); envoie("arreter"); }
 });
 
-/* ── vidéo (WebRTC, en direct du robot) ───────────────────────────────── */
-(async function video(){
-  let ip = null;
+/* ── caméra (WebRTC, en direct du robot) — allumée à la demande ─────────────
+   La caméra part ÉTEINTE : elle charge le CPU du robot, inutile de la faire
+   tourner pendant qu'il déambule si personne ne regarde. Le bouton « Caméra »
+   l'allume et l'éteint. Deux gestes à chaque bascule :
+     1. POST /api/camera {enabled} — commande VISION_SET_DETECTION du firmware,
+        qui OUVRE (ou coupe) réellement le flux vidéo à bord ; sans ça, la
+        négociation WebRTC ci-dessous n'a aucun flux à recevoir ;
+     2. on établit (ou on ferme) la liaison WebRTC navigateur ⇄ robot.
+   ── */
+let pc = null, ws = null, camOn = false, camBusy = false;
+
+function majBoutonCam(){
+  const b = $("#cam");
+  b.classList.toggle("on", camOn);
+  b.setAttribute("aria-pressed", camOn ? "true" : "false");
+  b.disabled = camBusy;
+  b.querySelector(".lbl").textContent = camBusy
+    ? (camOn ? "Allumage…" : "Extinction…")
+    : (camOn ? "Caméra allumée" : "Caméra éteinte");
+}
+
+async function ipDuRobot(){
   try {
     const r = await fetch(API + "/api/status", {cache:"no-store"});
-    if (r.ok) ip = (await r.json()).robot_ip;
+    if (r.ok) return (await r.json()).robot_ip;
   } catch (e) {}
+  return null;
+}
+
+function fermeFlux(){
+  try { if (ws) ws.close(); } catch (e) {}
+  try { if (pc) pc.close(); } catch (e) {}
+  ws = null; pc = null;
+  const v = $("#vid");
+  if (v.srcObject) { try { v.srcObject.getTracks().forEach(t => t.stop()); } catch (e) {} v.srcObject = null; }
   const msg = $("#vidmsg");
+  msg.style.display = "";
+  msg.textContent = "Caméra éteinte — appuie sur « Caméra » pour voir le flux.";
+}
+
+async function ouvreFlux(){
+  const msg = $("#vidmsg");
+  msg.style.display = ""; msg.textContent = "Connexion au flux vidéo…";
+  const ip = await ipDuRobot();
   if (!ip) { msg.textContent = "Robot non connecté — connecte-le d'abord dans Studio 360."; return; }
 
-  const pc = new RTCPeerConnection({iceServers: []});
-  const ws = new WebSocket(`ws://${ip}:8766`);
+  pc = new RTCPeerConnection({iceServers: []});
+  ws = new WebSocket(`ws://${ip}:8766`);
+  const laLiaison = ws;                     // fige la liaison de CETTE ouverture
   let clientId = null;
   const enAttente = [];
   const nettoie = (c) => (c.startsWith("a=") ? c.slice(2) : c);
 
   pc.addTransceiver("video", {direction: "recvonly"});
   pc.ontrack = (e) => {
+    if (!camOn) return;                     // éteinte entre-temps : on ignore
     $("#vid").srcObject = e.streams[0] || new MediaStream([e.track]);
     msg.style.display = "none";
   };
   pc.onicecandidate = (e) => {
-    if (e.candidate && clientId && ws.readyState === WebSocket.OPEN)
-      ws.send(JSON.stringify({type:"webrtc_ice", client_id:clientId,
+    if (e.candidate && clientId && laLiaison.readyState === WebSocket.OPEN)
+      laLiaison.send(JSON.stringify({type:"webrtc_ice", client_id:clientId,
         candidate:e.candidate.candidate, sdpMid:e.candidate.sdpMid}));
   };
-  ws.onerror = () => { msg.textContent = "Flux vidéo injoignable."; };
-  ws.onclose = () => { if (!$("#vid").srcObject) msg.textContent = "Flux vidéo fermé."; };
+  ws.onerror = () => { if (camOn) msg.textContent = "Flux vidéo injoignable."; };
+  ws.onclose = () => { if (camOn && !$("#vid").srcObject) msg.textContent = "Flux vidéo fermé."; };
   ws.onmessage = async (ev) => {
+    if (laLiaison !== ws) return;           // message d'une liaison déjà fermée
     let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
     if (m.type === "welcome" && typeof m.client_id === "string") {
       clientId = m.client_id;
@@ -479,7 +702,7 @@ addEventListener("keydown", (e) => {
       try {
         await pc.setRemoteDescription({type:"answer", sdp:m.sdp});
         for (const c of enAttente.splice(0)) await pc.addIceCandidate(c).catch(()=>{});
-      } catch (e) { msg.textContent = "Échec de la négociation vidéo."; }
+      } catch (e) { if (camOn) msg.textContent = "Échec de la négociation vidéo."; }
       return;
     }
     if (m.type === "webrtc_ice" && typeof m.candidate === "string") {
@@ -488,7 +711,115 @@ addEventListener("keydown", (e) => {
       else enAttente.push(c);
     }
   };
-})();
+}
+
+async function commandeCamera(on){
+  // Commande la caméra à bord. Renvoie false si le helper la refuse, pour ne
+  // pas afficher « allumée » alors que le flux ne viendra jamais.
+  try {
+    const r = await fetch(API + "/api/camera", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({enabled: on})
+    });
+    return r.ok;
+  } catch (e) { return false; }
+}
+
+async function regleCamera(on){
+  if (camBusy || on === camOn) return;
+  camBusy = true; camOn = on; majBoutonCam();
+  const ok = await commandeCamera(on);
+  if (on) {
+    if (ok) { await ouvreFlux(); }
+    else { camOn = false; $("#vidmsg").textContent =
+             "Impossible d'allumer la caméra — robot connecté dans Studio 360 ?"; }
+  } else {
+    fermeFlux();
+  }
+  camBusy = false; majBoutonCam();
+}
+
+$("#cam").onclick = () => regleCamera(!camOn);
+majBoutonCam();
+fermeFlux();   // état initial : éteinte, aucun flux ouvert
+
+// En quittant la page (onglet fermé, cadre déchargé), on coupe la caméra du
+// robot si on l'avait allumée — pour ne pas la laisser tourner dans le vide.
+addEventListener("pagehide", () => {
+  if (!camOn) return;
+  try {
+    navigator.sendBeacon(API + "/api/camera",
+      new Blob([JSON.stringify({enabled:false})], {type:"application/json"}));
+  } catch (e) {}
+});
+
+/* ── animations d'évitement ───────────────────────────────────────────────
+   On assigne une action de la bibliothèque à un événement. Les menus sont
+   peuplés depuis /api/actions (le robot doit être connecté dans Studio 360) ;
+   le réglage est envoyé au nœud embarqué via /api/deambulation/animations. */
+const ANIM_EVTS = [
+  ["approche", "À l'approche d'un obstacle"],
+  ["bloque",   "Quand il est coincé"],
+];
+let ACTIONS = [];
+const nomAction = (a) => a.id || a.name || a.filename || a.file || "";
+
+async function chargeActions(){
+  try {
+    const r = await fetch(API + "/api/actions", {cache:"no-store"});
+    ACTIONS = r.ok ? ((await r.json()).actions || []) : [];
+  } catch (e) { ACTIONS = []; }
+}
+
+async function animCourantes(){
+  try {
+    const r = await fetch(API + "/api/deambulation/etat", {cache:"no-store"});
+    if (r.ok) { const j = await r.json();
+      return {map: j.animations || {}, actif: j.animations_actives}; }
+  } catch (e) {}
+  return {map:{}, actif:undefined};
+}
+
+function optionsPour(sel){
+  let html = '<option value="">— aucune —</option>';
+  for (const a of ACTIONS){ const n = nomAction(a); if (!n) continue;
+    html += `<option value="${n}"${sel===n?" selected":""}>${n}</option>`; }
+  return html;
+}
+
+async function batiAnimations(){
+  await chargeActions();
+  const {map, actif} = await animCourantes();
+  $("#anim-note").textContent = (actif === false)
+    ? "paquet websocket-client absent sur le robot — animations inactives"
+    : (ACTIONS.length ? "" : "robot non connecté — connecte-le pour choisir une animation");
+  $("#anim-rows").innerHTML = ANIM_EVTS.map(([cle,label]) =>
+    `<div class="animrow">
+       <label class="lab">${label}</label>
+       <select data-evt="${cle}">${optionsPour(map[cle]||"")}</select>
+       <button type="button" data-preview="${cle}" title="Jouer l'action une fois">Aperçu</button>
+     </div>`).join("");
+  $("#anim-rows").querySelectorAll("[data-preview]").forEach(b => b.onclick = () => {
+    const sel = $(`select[data-evt="${b.dataset.preview}"]`).value;
+    if (!sel) return;
+    fetch(API + "/api/action/play", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify({name:sel})})
+      .then(r => { $("#anim-status").textContent = r.ok ? "aperçu envoyé" : "aperçu indisponible"; })
+      .catch(() => { $("#anim-status").textContent = "aperçu indisponible"; });
+  });
+}
+
+$("#anim-save").onclick = async () => {
+  const map = {};
+  $("#anim-rows").querySelectorAll("select").forEach(s => map[s.dataset.evt] = s.value || null);
+  try {
+    const r = await fetch(API + "/api/deambulation/animations", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(map)});
+    $("#anim-status").textContent = r.ok ? "enregistré ✓" : "échec de l'enregistrement";
+  } catch (e) { $("#anim-status").textContent = "service injoignable"; }
+};
+
+batiAnimations();
 </script>
 </body>
 </html>

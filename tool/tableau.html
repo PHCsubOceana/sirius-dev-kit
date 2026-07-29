@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vie du robot — Studio 360</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+  :root {
+    color-scheme: dark;
+    --plane:#0b0d10; --surface-1:#141619; --surface-2:#1c2026; --surface-3:#232830;
+    --text-primary:#fff; --text-secondary:#b4bcc8; --text-muted:#7d8794;
+    --border:#ffffff17; --border-strong:#ffffff29;
+    --accent:#22d3ee; --accent-fill:#18a5c4; --accent-soft:#22d3ee1f;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --plane:#f2f4f6; --surface-1:#fcfcfb; --surface-2:#f1f2f4; --surface-3:#e7e9ec;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#6b7280;
+    --border:#0b0b0b1c; --border-strong:#0b0b0b33;
+    --accent:#0891b2; --accent-fill:#0891b2; --accent-soft:#0891b21a;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--plane); color:var(--text-primary);
+         font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+           padding:14px 18px; background:var(--surface-1); border-bottom:1px solid var(--border); }
+  .logo { width:34px;height:34px;border-radius:9px;background:var(--accent-soft);
+          display:grid;place-items:center;color:var(--accent);flex:none; }
+  h1 { font-size:17px; margin:0; font-weight:650; }
+  .sub { color:var(--text-muted); font-size:12px; }
+  .spacer { flex:1 1 auto; }
+  a.link { color:var(--accent); text-decoration:none; font-size:13px; font-weight:600; margin-left:4px; }
+  a.link:hover { text-decoration:underline; }
+  .chip { display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+          background:var(--surface-2);border:1px solid var(--border);font-size:13px;color:var(--text-secondary); }
+  .dot { width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex:none; }
+  main { padding:16px; max-width:1180px; margin:0 auto; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; align-items:start; }
+  @media (max-width:1080px){ .grid { grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:720px){ .grid { grid-template-columns:1fr; } }
+  /* cartes qui ont besoin de largeur */
+  .grid .large { grid-column:1/-1; }
+  /* la carte Humeur est haute : on lui fait occuper deux rangées pour que
+     Interactions et Dialogue IA viennent se caler sous Batterie et Réseau,
+     au lieu de laisser un grand vide. Uniquement en 3 colonnes. */
+  @media (min-width:1081px){ .grid .haute { grid-row:span 2; } }
+  .card { background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:15px; }
+  .card h2 { font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);
+             margin:0 0 12px;font-weight:600; }
+  .kv { display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:14px;border-bottom:1px solid var(--border); }
+  .kv:last-child { border-bottom:none; }
+  .kv .k { color:var(--text-muted); } .kv .v { font-variant-numeric:tabular-nums;font-weight:600; }
+  .big { font-size:30px;font-weight:680;font-variant-numeric:tabular-nums; }
+  button { font:inherit;font-weight:600;border-radius:10px;cursor:pointer;padding:9px 14px;
+           border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-primary);min-height:40px; }
+  button:hover:not(:disabled){ background:var(--surface-3); }
+  button.danger { background:color-mix(in srgb, var(--critical) 18%, var(--surface-2)); }
+  /* jauge */
+  .gauge { height:10px;border-radius:6px;background:var(--surface-3);overflow:hidden;margin:4px 0 2px; }
+  .gauge > i { display:block;height:100%;border-radius:6px;background:var(--accent); }
+  /* plan valence/arousal */
+  .plane { position:relative;width:100%;aspect-ratio:1/1;max-width:230px;margin:0 auto;
+           background:var(--surface-2);border:1px solid var(--border-strong);border-radius:10px; }
+  .plane .axv,.plane .axh { position:absolute;background:var(--border-strong); }
+  .plane .axv { left:50%;top:0;width:1px;height:100%; } .plane .axh { top:50%;left:0;height:1px;width:100%; }
+  .plane .lbl { position:absolute;font-size:10px;color:var(--text-muted); }
+  .plane .pt { position:absolute;width:16px;height:16px;border-radius:50%;background:var(--accent);
+               transform:translate(-50%,-50%);box-shadow:0 0 0 4px var(--accent-soft);transition:left .4s,top .4s; }
+  /* charge par patte */
+  .legs { display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end; }
+  .leg { display:flex;flex-direction:column;align-items:center;gap:3px; }
+  .leg .bar { width:100%;height:70px;background:var(--surface-3);border-radius:4px;position:relative;overflow:hidden; }
+  .leg .bar > i { position:absolute;bottom:0;left:0;width:100%;background:var(--good);border-radius:4px; }
+  .leg .lb { font-size:10px;color:var(--text-muted);font-variant-numeric:tabular-nums; }
+  .events { max-height:150px;overflow:auto;font-size:12.5px; }
+  .ev { padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px; }
+  .ev .t { color:var(--accent);font-weight:600; }
+  pre#logbox { max-height:260px;overflow:auto;background:var(--surface-2);border:1px solid var(--border);
+               border-radius:8px;padding:10px;font-size:11.5px;white-space:pre-wrap;word-break:break-word; }
+  .muted { color:var(--text-muted);font-size:12.5px; }
+  /* — LED : une colonne par groupe, sa couleur dessous — */
+  .ledcols { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+  .ledgrp { background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px; }
+  .ledtitre { font-size:13px;font-weight:650;margin-bottom:8px; }
+  .ledpick { width:100%;height:40px;padding:2px;border-radius:9px;cursor:pointer;
+             border:1px solid var(--border-strong);background:var(--surface-3); }
+  .ledpal { display:flex;gap:5px;flex-wrap:wrap;margin-top:8px; }
+  .ledpal button { width:24px;height:24px;min-height:24px;padding:0;border-radius:6px;
+                   border:1px solid var(--border-strong);cursor:pointer; }
+  footer { text-align:center;color:var(--text-muted);font-size:11.5px;padding:22px 16px 30px; }
+  body.embed > header, body.embed footer { display:none; } body.embed main { padding:0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">❤</div>
+  <div><h1>Vie du robot</h1><div class="sub">Studio 360 pour Sirius — projet indépendant</div></div>
+  <div class="spacer"></div>
+  <a class="link" href="/" target="_top">← Interface principale</a>
+  <a class="link" href="/accueil" target="_top">Tous les outils</a>
+  <a class="link" href="/deambulation" target="_top">Déambulation</a>
+  <a class="link" href="/enchainements" target="_top">Enchaînements</a>
+  <span class="chip"><i class="dot" id="dot-link"></i><span id="lbl-link">liaison…</span></span>
+  <button id="theme" title="Thème" style="min-height:34px;padding:6px 10px">◐</button>
+</header>
+
+<main>
+  <div class="grid">
+    <!-- Humeur -->
+    <section class="card haute">
+      <h2>Humeur</h2>
+      <div class="kv"><span class="k">État</span><span class="v" id="emo-state">—</span></div>
+      <div class="plane" id="plane" style="margin-top:12px">
+        <div class="axv"></div><div class="axh"></div>
+        <span class="lbl" style="top:2px;left:50%;transform:translateX(-50%)">éveil +</span>
+        <span class="lbl" style="bottom:2px;left:50%;transform:translateX(-50%)">calme −</span>
+        <span class="lbl" style="left:3px;top:50%;transform:translateY(-50%)">− déplaisir</span>
+        <span class="lbl" style="right:3px;top:50%;transform:translateY(-50%)">plaisir +</span>
+        <div class="pt" id="emo-pt" style="left:50%;top:50%"></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="kv"><span class="k">Satiété</span><span class="v" id="sat-v">—</span></div>
+        <div class="gauge"><i id="sat-g" style="width:0%"></i></div>
+        <div class="kv" style="margin-top:6px"><span class="k">Fatigue</span><span class="v" id="fat-v">—</span></div>
+        <div class="gauge"><i id="fat-g" style="width:0%;background:var(--warning)"></i></div>
+      </div>
+      <div class="muted" id="emo-note" style="margin-top:8px"></div>
+    </section>
+
+    <!-- Batterie -->
+    <section class="card">
+      <h2>Batterie</h2>
+      <div class="big"><span id="bat-pct">—</span><span style="font-size:16px;color:var(--text-muted)"> %</span></div>
+      <div class="kv"><span class="k">État</span><span class="v" id="bat-status">—</span></div>
+      <div class="kv"><span class="k">Tension</span><span class="v" id="bat-volt">—</span></div>
+      <div class="kv"><span class="k">Courant</span><span class="v" id="bat-cur">—</span></div>
+      <div class="kv"><span class="k">Température</span><span class="v" id="bat-temp">—</span></div>
+    </section>
+
+    <!-- Réseau -->
+    <section class="card">
+      <h2>Réseau</h2>
+      <div class="kv"><span class="k">Wi-Fi</span><span class="v" id="net-ssid">—</span></div>
+      <div class="kv"><span class="k">Signal</span><span class="v" id="net-sig">—</span></div>
+      <div class="kv"><span class="k">Adresse IP</span><span class="v" id="net-ip">—</span></div>
+      <div class="kv"><span class="k">MAC</span><span class="v" id="net-mac">—</span></div>
+      <div class="kv"><span class="k">CPU</span><span class="v" id="sys-cpu">—</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Interactions récentes</h2>
+      <div class="events" id="events"><div class="muted">En attente d'événements…</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Dialogue IA</h2>
+      <div class="muted" style="margin-bottom:10px">La mémoire du dialogue est conservée sur le robot (voix cloud). Tu peux la réinitialiser.</div>
+      <button class="danger" id="clear-ia">Réinitialiser la mémoire du dialogue</button>
+      <div class="muted" id="ia-status" style="margin-top:8px"></div>
+    </section>
+
+    <section class="card">
+      <h2>Volume audio</h2>
+      <div class="big"><span id="vol-val">—</span><span style="font-size:16px;color:var(--text-muted)"> / 100</span></div>
+      <input type="range" id="vol" min="0" max="100" step="1" value="0"
+             style="width:100%;accent-color:var(--accent);margin-top:10px;min-height:34px">
+      <div class="muted" id="vol-status" style="margin-top:6px">Paramètre audio_volume du robot.</div>
+    </section>
+
+    <!-- LED -->
+    <section class="card">
+      <h2>LED</h2>
+      <div class="ledcols">
+        <div class="ledgrp">
+          <div class="ledtitre">Tête <span class="muted">· 2 LED</span></div>
+          <input type="color" class="ledpick" data-grp="tete" value="#22d3ee">
+          <div class="ledpal" data-pal="tete"></div>
+        </div>
+        <div class="ledgrp">
+          <div class="ledtitre">Corps <span class="muted">· 6 LED</span></div>
+          <input type="color" class="ledpick" data-grp="corps" value="#22d3ee">
+          <div class="ledpal" data-pal="corps"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button id="led-defaut" title="Rouge d'origine du constructeur (194, 0, 0)">Couleurs d'origine</button>
+        <button id="led-off" class="danger">Tout éteindre</button>
+      </div>
+      <div class="muted" id="led-status" style="margin-top:8px"></div>
+    </section>
+
+    <!-- Écran de la tête -->
+    <section class="card">
+      <h2>Écran de la tête</h2>
+      <div class="muted" style="margin-bottom:10px">
+        Message texte et animations de la bibliothèque du robot.
+        Nécessite le service embarqué (<code>deambulation.py --service</code>).
+      </div>
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="ecr-texte" placeholder="Message à afficher…"
+               style="flex:1;min-width:150px;min-height:40px;border-radius:9px;padding:0 10px;
+                      border:1px solid var(--border-strong);background:var(--surface-2);
+                      color:var(--text-primary);font:inherit">
+        <button id="ecr-envoyer">Afficher</button>
+      </div>
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+        <select id="ecr-anim" style="flex:1;min-width:150px;min-height:40px;border-radius:9px;padding:0 10px;
+                border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-primary);font:inherit">
+          <option value="">— animations —</option>
+        </select>
+        <button id="ecr-jouer">Jouer</button>
+      </div>
+      <div class="muted" id="ecr-status" style="margin-top:8px"></div>
+    </section>
+
+    <!-- Volume audio -->
+    
+
+    <!-- Charge par articulation -->
+    <section class="card large">
+      <h2>Charge par articulation (14 moteurs, ‰)</h2>
+      <div class="legs" id="legs"></div>
+      <div class="muted" style="margin-top:10px">Repère : repos ~150 ‰ · marche ~540 ‰ · <span style="color:var(--warning)">alerte >850 ‰</span>. Barre par moteur, rafraîchie en direct.</div>
+    </section>
+
+    <!-- Interactions tactiles -->
+    
+
+    <!-- IA / mémoire -->
+    
+
+    <!-- Journaux -->
+    <section class="card large">
+      <h2>Journaux du robot</h2>
+      <button id="load-logs">Charger les journaux</button>
+      <span class="muted" id="log-status" style="margin-left:8px"></span>
+      <pre id="logbox" style="display:none;margin-top:10px"></pre>
+    </section>
+  </div>
+  <footer><b>Studio 360 pour Sirius</b> — projet indépendant d'explorations360, sans lien ni affiliation avec Hengbot.</footer>
+</main>
+
+<script>
+"use strict";
+const API = "";
+const $ = (s) => document.querySelector(s);
+if (window.self !== window.top) document.body.classList.add("embed");
+
+(function(){ const k="sirius.theme";
+  const res=(v)=>(v==="auto"||v==="system")?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):v;
+  const app=()=>{let v=null;try{v=new URLSearchParams(location.search).get("theme")||localStorage.getItem(k);}catch(e){}
+    const t=res(v); if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;};
+  app(); addEventListener("storage",e=>{if(e.key===k)app();});
+  $("#theme").onclick=()=>{const el=document.documentElement;const t=el.dataset.theme==="light"?"dark":"light";
+    el.dataset.theme=t;try{localStorage.setItem(k,t);}catch(e){}};
+})();
+
+function lien(ok,txt){ $("#dot-link").style.background=ok?"var(--good)":"var(--critical)"; $("#lbl-link").textContent=txt; }
+const num = (x)=> (typeof x==="number" && isFinite(x));
+const fmt = (x,d=2)=> num(x)? x.toFixed(d) : "—";
+// certaines grandeurs (valence, arousal, satiété) peuvent arriver en [-1,1] ou [0,1] :
+// on ramène en [0,1] pour les jauges, en gardant le signe pour le plan.
+const to01 = (x)=> !num(x)?0: (x>=-1&&x<=1 ? (x<0? (x+1)/2 : (x<=1&&x>=0? x : x)) : Math.max(0,Math.min(1,x)));
+
+// construit les 14 barres de charge
+const legs = $("#legs");
+legs.innerHTML = Array.from({length:14},(_,i)=>
+  `<div class="leg"><div class="bar"><i data-load="${i}"></i></div><div class="lb">M${i}</div></div>`).join("");
+
+function rendu(s){
+  lien(!!s.connected, s.connected? "robot connecté" : "robot déconnecté");
+  // — Humeur —
+  const e = s.emotion || {};
+  $("#emo-state").textContent = e.state || "—";
+  const val = num(e.valence)? Math.max(-1,Math.min(1, e.valence)) : 0;
+  const aro = num(e.arousal)? Math.max(-1,Math.min(1, e.arousal)) : 0;
+  $("#emo-pt").style.left = ((val+1)/2*100)+"%";
+  $("#emo-pt").style.top  = ((1-(aro+1)/2)*100)+"%";
+  if (num(e.satiety)){ const p=Math.round(to01(e.satiety)*100); $("#sat-v").textContent=p+" %"; $("#sat-g").style.width=p+"%"; }
+  else { $("#sat-v").textContent="—"; $("#sat-g").style.width="0%"; }
+  if (num(e.fatigue)){ const p=Math.round(to01(e.fatigue)*100); $("#fat-v").textContent=p+" %"; $("#fat-g").style.width=p+"%"; }
+  else { $("#fat-v").textContent = (e.fatigue==null? "—" : String(e.fatigue)); $("#fat-g").style.width="0%"; }
+  $("#emo-note").textContent = (e.valence==null && e.arousal==null)
+    ? "Aucune donnée d'humeur reçue (le robot ne pousse peut-être pas encore emotion-update)." : "";
+  // — Batterie —
+  const b = s.battery || {};
+  $("#bat-pct").textContent = num(b.percent)? b.percent : "—";
+  // `power_supply_status` suit la norme ROS BatteryState : c'est un CODE, pas un texte.
+  const BAT_ETAT = {0:"inconnu", 1:"en charge ⚡", 2:"sur batterie", 3:"pas en charge", 4:"pleine"};
+  const bs = b.status;
+  let txtBat;
+  if (num(bs)) txtBat = BAT_ETAT[bs] || ("code " + bs);
+  else { const st=(bs||"").toString().toLowerCase();
+         txtBat = st.includes("charg") && !st.includes("dis") ? "en charge ⚡"
+                : st.includes("dis") ? "sur batterie" : (bs || "—"); }
+  $("#bat-status").textContent = txtBat;
+  $("#bat-volt").textContent = num(b.voltage)? b.voltage.toFixed(2)+" V" : "—";
+  $("#bat-cur").textContent = num(b.current)? (b.current>0?"+":"")+b.current.toFixed(2)+" A" : "—";
+  $("#bat-temp").textContent = num(b.temperature)? b.temperature.toFixed(1)+" °C" : "—";
+  // — Réseau / système —
+  const n = s.network || {};
+  $("#net-ssid").textContent = n.ssid || (n.connected? "connecté" : "—");
+  $("#net-sig").textContent = (n.signal==null? "—" : n.signal + (num(n.signal)? " dBm" : ""));
+  $("#net-ip").textContent = n.ip || "—";
+  $("#net-mac").textContent = n.mac || "—";
+  const sys = s.system || {};
+  $("#sys-cpu").textContent = num(sys.cpu_percent)? Math.round(sys.cpu_percent)+" %" : "—";
+  // — Charge par moteur —
+  const loads = (s.motors && s.motors.loads) || [];
+  for (let i=0;i<14;i++){
+    const bar = legs.querySelector(`[data-load="${i}"]`);
+    const v = num(loads[i])? Math.abs(loads[i]) : 0;
+    const h = Math.max(2, Math.min(100, v/1000*100));
+    bar.style.height = h+"%";
+    bar.style.background = v>=850? "var(--critical)" : v>=650? "var(--warning)" : "var(--good)";
+  }
+  // — Interactions (touch_tap dans recent_events) —
+  const evs = (s.behavior && s.behavior.recent_events) || [];
+  if (evs.length){
+    $("#events").innerHTML = evs.slice(-12).reverse().map(ev=>{
+      const txt = (typeof ev==="string")? ev : JSON.stringify(ev);
+      const touch = /touch|tap|pet|caress/i.test(txt);
+      const t = (typeof ev==="object" && ev)? (ev.type||ev.event||ev.name||"événement") : ev;
+      return `<div class="ev"><span class="t">${touch?"✋":"•"}</span><span>${String(t)}</span></div>`;
+    }).join("");
+  }
+}
+
+async function tic(){
+  try { const r=await fetch(API+"/api/status",{cache:"no-store"});
+    if (r.ok){ rendu(await r.json()); return; } } catch(e){}
+  lien(false,"helper injoignable");
+}
+setInterval(tic, 1200); tic();
+
+$("#clear-ia").onclick = async () => {
+  $("#ia-status").textContent = "…";
+  try { const r=await fetch(API+"/api/ai/clear_history",{method:"POST"});
+    $("#ia-status").textContent = r.ok? "Mémoire du dialogue réinitialisée ✓" : "Échec (robot connecté ?)"; }
+  catch(e){ $("#ia-status").textContent = "Service injoignable"; }
+};
+
+// — Volume : lit au chargement, règle en glissant (débouncé) —
+async function litVolume(){
+  // La LECTURE du volume (USER_GET_NODE_PARAMETER) n'est pas confirmée sur ce
+  // firmware : si elle échoue, on le DIT au lieu d'afficher 0, qui laisserait
+  // croire que le robot est muet. Le réglage, lui, est vérifié et fonctionne.
+  try { const r = await fetch(API+"/api/volume",{cache:"no-store"});
+    if (r.ok){ const j = await r.json();
+      if (num(j.value)){ $("#vol").value = j.value; $("#vol-val").textContent = Math.round(j.value);
+        $("#vol-status").textContent = "Paramètre audio_volume du robot."; return; } } }
+  catch(e){}
+  $("#vol-val").textContent = "?";
+  $("#vol-status").textContent = "Niveau actuel non lisible sur ce firmware — bouge le curseur pour le régler.";
+}
+let _volTimer=null;
+$("#vol").oninput = () => { $("#vol-val").textContent = $("#vol").value; };
+$("#vol").onchange = () => {
+  const v = +$("#vol").value;
+  clearTimeout(_volTimer);
+  _volTimer = setTimeout(async () => {
+    $("#vol-status").textContent = "réglage…";
+    try { const r = await fetch(API+"/api/volume",{method:"POST",
+        headers:{"Content-Type":"application/json"}, body:JSON.stringify({value:v})});
+      $("#vol-status").textContent = r.ok ? ("volume réglé à "+v) : "échec (robot connecté ?)"; }
+    catch(e){ $("#vol-status").textContent = "service injoignable"; }
+  }, 250);
+};
+litVolume();
+
+// — LED : deux groupes indépendants (2 à la tête, 6 sur le corps).
+// La trame UDP fixe TOUTES les LED d'un coup : on renvoie donc toujours l'état
+// des deux groupes, sinon régler l'un éteindrait l'autre.
+const LED_PALETTE = ["#ffffff","#ff2d2d","#12c912","#2b6bff","#22d3ee","#a78bfa","#fab219","#000000"];
+const ledEtat = { tete:"#22d3ee", corps:"#22d3ee" };
+
+document.querySelectorAll("[data-pal]").forEach(zone=>{
+  const grp = zone.dataset.pal;
+  zone.innerHTML = LED_PALETTE.map(c=>
+    `<button type="button" data-grp="${grp}" data-hex="${c}" title="${c}"
+             style="background:${c}"></button>`).join("");
+});
+document.querySelectorAll("[data-hex]").forEach(b=> b.onclick = ()=>{
+  const g = b.dataset.grp;
+  ledEtat[g] = b.dataset.hex;
+  document.querySelector(`.ledpick[data-grp="${g}"]`).value = b.dataset.hex;
+  envoieLed();
+});
+document.querySelectorAll(".ledpick").forEach(inp=>{
+  inp.oninput = ()=>{ ledEtat[inp.dataset.grp] = inp.value; };
+  inp.onchange = ()=>{ ledEtat[inp.dataset.grp] = inp.value; envoieLed(); };
+});
+
+function rvbDepuisHex(h){
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h||"");
+  return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : [0,0,0];
+}
+async function envoieLed(){
+  const t = rvbDepuisHex(ledEtat.tete), c = rvbDepuisHex(ledEtat.corps);
+  $("#led-status").textContent = "envoi…";
+  try {
+    const r = await fetch(API+"/api/led", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({head:[t,t], body:[c,c,c,c,c,c]})});
+    $("#led-status").textContent = r.ok ? "Couleurs envoyées." : "refusé (robot connecté ?)";
+  } catch(e){ $("#led-status").textContent = "service injoignable"; }
+}
+function poseCouleurs(hex){
+  ledEtat.tete = ledEtat.corps = hex;
+  document.querySelectorAll(".ledpick").forEach(i=> i.value = hex);
+}
+$("#led-off").onclick = ()=>{ poseCouleurs("#000000"); envoieLed(); };
+$("#led-defaut").onclick = async ()=>{
+  $("#led-status").textContent = "envoi…";
+  try {
+    const r = await fetch(API+"/api/led/defaut", {method:"POST"});
+    if (r.ok){ poseCouleurs("#c20000");   // 194,0,0
+               $("#led-status").textContent = "Couleurs d'origine rétablies."; }
+    else $("#led-status").textContent = "refusé (robot connecté ?)";
+  } catch(e){ $("#led-status").textContent = "service injoignable"; }
+};
+
+// — Écran de la tête : texte et animations (via le service embarqué) —
+async function chargeContenusEcran(){
+  try {
+    const r = await fetch(API+"/api/ecran/contenus", {cache:"no-store"});
+    if (!r.ok) throw 0;
+    const j = await r.json();
+    const lot = (j.lottie||[]).map(f=>`<option value="lottie:${f}">${f.replace(/\.json$/,"")}</option>`);
+    const gif = (j.gif||[]).map(f=>`<option value="gif:${f}">${f} (gif)</option>`);
+    $("#ecr-anim").innerHTML = '<option value="">— animations —</option>' + lot.join("") + gif.join("");
+    if (!lot.length && !gif.length) $("#ecr-status").textContent = "aucune animation trouvée sur le robot";
+  } catch(e){
+    $("#ecr-status").textContent = "service embarqué non lancé — l'écran restera muet.";
+  }
+}
+async function ecranPost(quoi, corps, okTxt){
+  $("#ecr-status").textContent = "envoi…";
+  try {
+    const r = await fetch(API+"/api/ecran/"+quoi, {method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(corps)});
+    $("#ecr-status").textContent = r.ok ? okTxt : "refusé — service embarqué lancé ?";
+  } catch(e){ $("#ecr-status").textContent = "service injoignable"; }
+}
+$("#ecr-envoyer").onclick = ()=>{
+  const t = ($("#ecr-texte").value||"").trim();
+  if (!t){ $("#ecr-status").textContent = "écris un message d'abord."; return; }
+  ecranPost("toast", {message:t, type:0, position:1, duree_ms:3000}, "Message affiché.");
+};
+$("#ecr-jouer").onclick = ()=>{
+  const v = $("#ecr-anim").value;
+  if (!v){ $("#ecr-status").textContent = "choisis une animation."; return; }
+  const [quoi, fichier] = [v.slice(0, v.indexOf(":")), v.slice(v.indexOf(":")+1)];
+  ecranPost(quoi, {fichier, boucle:false, boucles:1}, "Animation jouée : " + fichier);
+};
+chargeContenusEcran();
+
+$("#load-logs").onclick = async () => {
+  $("#log-status").textContent = "chargement…";
+  try {
+    const r = await fetch(API+"/api/logs",{cache:"no-store"});
+    const box = $("#logbox");
+    if (r.ok){ const j = await r.json();
+      box.textContent = typeof j==="string"? j : JSON.stringify(j,null,2);
+      box.style.display="block"; $("#log-status").textContent=""; }
+    else { $("#log-status").textContent = "indisponible (HTTP "+r.status+")"; }
+  } catch(e){ $("#log-status").textContent = "service injoignable"; }
+};
+</script>
+</body>
+</html>

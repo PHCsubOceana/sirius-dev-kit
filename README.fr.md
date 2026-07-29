@@ -13,6 +13,23 @@ c'est écrit.
 > respectifs. Ce kit est le fruit d'un travail de rétro-ingénierie de l'API du
 > robot : il n'est ni fourni, ni approuvé, ni soutenu par le constructeur.
 
+> ## ⚠️ À qui s'adresse ce kit
+>
+> **À des personnes qui savent coder et qui savent ce qu'elles font.** Ce n'est
+> pas un produit grand public : il pilote un robot réel — des moteurs, un
+> appareil qui marche, se lève et peut tomber —, ne comporte **aucune
+> authentification** ni garde-fou, et expose des commandes issues de
+> rétro-ingénierie que le constructeur ne documente pas.
+>
+> **Fourni tel quel, sans assistance et sans garantie d'aucune sorte.** Personne
+> ne s'engage à répondre à une question, à corriger un défaut, ni à maintenir la
+> compatibilité avec les firmwares à venir. Les affirmations marquées « déduit »
+> ou « à confirmer » peuvent être fausses.
+>
+> **Vous êtes seul responsable de votre robot, de son environnement et de tout
+> dommage.** N'exécutez pas une commande dont vous ne comprenez pas l'effet. Si
+> ces conditions ne vous conviennent pas, n'utilisez pas ce kit.
+
 🇬🇧 [English version](README.md) · Référence technique complète :
 [`docs/sirius-api-fr.md`](docs/sirius-api-fr.md)
 
