@@ -160,6 +160,37 @@ l'add-on d'export embarque les données d'yeux **dans les fichiers d'action**
 (valeurs neutres relevées : `eye_upper` = −32, `eye_lower` = 63). L'écran est
 donc animé par le lecteur d'actions et le moteur d'émotion, pas de l'extérieur.
 
+**Les LED, elles, SONT pilotables — et plus finement que ne le fait l'add-on.**
+Trame UDP autonome sur `:8768`, format relevé dans l'add-on Blender officiel
+puis étendu par mesure sur le robot (29/07) :
+
+```json
+{"head_led": [[r,g,b], …], "body_led": [[r,g,b] × 6]}   // RVB 0-255
+```
+
+L'add-on n'envoie que **2** entrées de tête et 6 de corps, mais le firmware
+accepte un `head_led` **bien plus long** : les **12 mini-LED des oreilles** sont
+adressables une par une avec une trame de longueur 12. Cartographie relevée
+(1 = midi, sens horaire) :
+
+| index | LED | | index | LED |
+|---|---|---|---|---|
+| `head_led[0]` | oreille droite D1 | | `head_led[6]`  | oreille gauche G1 |
+| `head_led[1]` | oreille droite D2 | | `head_led[7]`  | oreille gauche G6 |
+| `head_led[2]` | oreille droite D3 | | `head_led[8]`  | oreille gauche G5 |
+| `head_led[3]` | oreille droite D4 | | `head_led[9]`  | oreille gauche G4 |
+| `head_led[4]` | oreille droite D5 | | `head_led[10]` | oreille gauche G3 |
+| `head_led[5]` | oreille droite D6 | | `head_led[11]` | oreille gauche G2 |
+
+`body_led[0..5]` = les **6 LED du dos**. Couleur d'origine constructeur :
+`[194, 0, 0]`. Côté helper : `POST /api/led {head:[…], body:[…]}` (12 têtes +
+6 dos) et `POST /api/led/defaut`.
+
+⚠️ Les **4 voyants des jonctions pattes / queue ne sont PAS des LED RVB** : ce
+sont les **témoins de batterie** (manuel officiel : « Tail Indicators: Four red
+lights represent 25% increments », clignotent en charge). Aucune trame ne les
+colore — c'est du matériel dédié, hors de ce canal.
+
 **Ce qui, en revanche, pilote l'écran** — services ROS actifs :
 `/lvgl_gui_node/play_lottie`, `/play_gif`, `/lvgl_gui/show_toast`,
 `/show_dialog`, `/show_ip_address`, `/camera_display/toggle`.
@@ -247,6 +278,19 @@ et le robot reste couché), et le **couple maximal**.
 
 `ACTION_PLAY` accepte aussi `{"action_name":"<nom>"}` — mais sans priorité, donc
 inadapté au redressement.
+
+**Reset ≠ Recovery — deux gestes distincts.** Le helper les expose séparément :
+
+- `POST /api/reset` → l'action `returnPosition` ci-dessus : le robot se **remet
+  debout** depuis une posture couchée (voie sûre, capturée sur l'interface
+  officielle).
+- `POST /api/recovery` → la commande **`self_recover {}`** (§3) : la **mécanique
+  de relevage après chute** propre au robot, différente d'une simple remise
+  debout.
+
+Dans l'interface principale, le bouton **Reset** (barre du haut) appelle le
+premier ; le bouton **Recovery** (affiché **« Relever »** en français) appelle
+le second.
 
 ---
 

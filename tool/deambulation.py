@@ -108,7 +108,7 @@ from collections import deque
 # avec une version périmée du fichier sans que personne s'en aperçoive —
 # les corrections étaient sur le PC, pas sur le robot. Un numéro affiché
 # en première ligne rend la confusion impossible.
-VERSION = "15 — animation à l'approche avant recul + recul-vide borné (28/07)"
+VERSION = "16 — anticipation vide : arrêt immédiat + bord franc diagonale à 1 zone (29/07)"
 
 # ═══════════════════════════ géométrie du capteur ═══════════════════════════
 HORS_PORTEE = 2047        # mm : le capteur ne voit rien d'assez proche
@@ -468,7 +468,16 @@ class Cerveau:
         # robot lui-même ; s'y fier seule pour détecter un vide serait bâtir
         # la sécurité la plus importante sur les zones les moins fiables.
         en_bas = sum(1 for i in perdues if i in RANGEE_BAS + RANGEE_BASSE)
-        if en_bas >= 2 or len(perdues) >= 3:
+        # Bord FRANC : une zone basse fiable qui ne renvoie plus RIEN (aucune
+        # cible) a perdu le sol pour de bon — un vrai bord, pas un reflet. En
+        # approche DIAGONALE le vide n'apparaît d'abord que dans UN seul coin :
+        # exiger deux zones le laissait passer, et le robot basculait. Le sol
+        # normal ne sature jamais une zone fiable, donc ce critère ne crée pas de
+        # faux positifs en navigation à plat. La persistance (PERSISTANCE cycles,
+        # cf. decide) reste exigée avant d'agir.
+        francs_bas = sum(1 for i in perdues if i in RANGEE_BAS + RANGEE_BASSE
+                         and (grille[i] is None or grille[i] >= HORS_PORTEE))
+        if francs_bas >= 1 or en_bas >= 2 or len(perdues) >= 3:
             return perdues
         return []
 
@@ -570,6 +579,14 @@ class Cerveau:
         self._compteur_vide = self._compteur_vide + 1 if perdues else 0
         if not perdues:
             self._reoriente_vide_depuis = None   # plus de vide : on oublie la réorientation
+        # ANTICIPATION (anti-chute en diagonale) : dès qu'un vide est DÉTECTÉ mais
+        # pas encore CONFIRMÉ par la persistance, on cesse d'avancer sur-le-champ.
+        # Reculer serait aveugle si c'était une fausse alerte ; mais continuer
+        # d'avancer vers un bord possible est précisément ce qui fait basculer le
+        # robot en approche diagonale. Vitesse nulle le temps de trancher = sûr.
+        if perdues and self._compteur_vide < PERSISTANCE and self._reoriente_vide_depuis is None:
+            return self._passe("prudence", "vide possible devant — arrêt, confirmation en cours",
+                               maintenant, 0.0, 0.0)
         if perdues and self._compteur_vide >= PERSISTANCE:
             # Le recul est AVEUGLE (rien derrière le robot). Même face à un vide
             # qui persiste, on ne recule pas indéfiniment vers l'arrière qu'on ne

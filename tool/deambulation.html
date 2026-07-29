@@ -73,6 +73,15 @@
   .avert .ico { color:var(--warning); }
   .avert summary { cursor:pointer; color:var(--text-muted); }
   .avert details { margin-top:5px; }
+  /* banniere prerequis : service embarque obligatoire (rouge, bloquant) */
+  .svc-alert { display:flex;gap:10px;align-items:flex-start;margin:0 0 14px;padding:11px 14px;border-radius:11px;
+               background:color-mix(in srgb, var(--critical) 13%, var(--surface-1));
+               border:1px solid color-mix(in srgb, var(--critical) 45%, transparent);
+               font-size:13.5px;line-height:1.5; }
+  .svc-alert .ico { color:var(--critical);flex:none;font-size:18px;line-height:1.35; }
+  .svc-alert b { color:var(--text-primary); }
+  .svc-alert code { background:var(--surface-2);padding:1px 5px;border-radius:5px;font-size:12.5px; }
+  .svc-alert a { color:var(--accent);font-weight:600;white-space:nowrap; }
   .card { background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:15px; }
   .card h2 { font-size:12px;letter-spacing:.08em;text-transform:uppercase;
              color:var(--text-muted);margin:0 0 12px;font-weight:600; }
@@ -201,6 +210,17 @@
 </header>
 
 <main>
+  <div class="svc-alert" id="svc-alert">
+    <span class="ico">⛔</span>
+    <div>
+      <b>La déambulation ne démarre pas tant que le service n’est pas lancé sur le robot.</b>
+      L’évitement d’obstacles tourne <b>à bord du robot</b> (le capteur de distance n’existe que là).
+      À faire une fois par démarrage : double-clic sur <code>deambulation_robot.bat</code>,
+      ou en SSH <code>python3 /root/deambulation.py --service</code>.
+      <a href="https://explorations360.com/sirius" target="_blank" rel="noopener">Explications sur le wiki ↗</a>
+    </div>
+  </div>
+
   <div class="barre">
     <button id="go">Démarrer</button>
     <button id="stop">Arrêter</button>
@@ -548,6 +568,8 @@ async function tic(){
       + "Le reste de l'interface fonctionne normalement.";
   }
   // succès → cadence nominale ; échec → on double l'attente, jusqu'à 5 s
+  const _svcAlert = document.getElementById("svc-alert");
+  if (_svcAlert) _svcAlert.style.display = ok ? "none" : "";
   periode = ok ? PERIODE_OK : Math.min(PERIODE_MAX, Math.max(1000, periode * 2));
   ticArme = setTimeout(tic, periode);
 }

@@ -150,45 +150,11 @@
     </section>
 
     <section class="card">
-      <h2>Interactions récentes</h2>
-      <div class="events" id="events"><div class="muted">En attente d'événements…</div></div>
-    </section>
-
-    <section class="card">
-      <h2>Dialogue IA</h2>
-      <div class="muted" style="margin-bottom:10px">La mémoire du dialogue est conservée sur le robot (voix cloud). Tu peux la réinitialiser.</div>
-      <button class="danger" id="clear-ia">Réinitialiser la mémoire du dialogue</button>
-      <div class="muted" id="ia-status" style="margin-top:8px"></div>
-    </section>
-
-    <section class="card">
       <h2>Volume audio</h2>
       <div class="big"><span id="vol-val">—</span><span style="font-size:16px;color:var(--text-muted)"> / 100</span></div>
       <input type="range" id="vol" min="0" max="100" step="1" value="0"
              style="width:100%;accent-color:var(--accent);margin-top:10px;min-height:34px">
       <div class="muted" id="vol-status" style="margin-top:6px">Paramètre audio_volume du robot.</div>
-    </section>
-
-    <!-- LED -->
-    <section class="card">
-      <h2>LED</h2>
-      <div class="ledcols">
-        <div class="ledgrp">
-          <div class="ledtitre">Tête <span class="muted">· 2 LED</span></div>
-          <input type="color" class="ledpick" data-grp="tete" value="#22d3ee">
-          <div class="ledpal" data-pal="tete"></div>
-        </div>
-        <div class="ledgrp">
-          <div class="ledtitre">Corps <span class="muted">· 6 LED</span></div>
-          <input type="color" class="ledpick" data-grp="corps" value="#22d3ee">
-          <div class="ledpal" data-pal="corps"></div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-        <button id="led-defaut" title="Rouge d'origine du constructeur (194, 0, 0)">Couleurs d'origine</button>
-        <button id="led-off" class="danger">Tout éteindre</button>
-      </div>
-      <div class="muted" id="led-status" style="margin-top:8px"></div>
     </section>
 
     <!-- Écran de la tête -->
@@ -215,8 +181,55 @@
       <div class="muted" id="ecr-status" style="margin-top:8px"></div>
     </section>
 
-    <!-- Volume audio -->
-    
+    <!-- LED -->
+    <section class="card large" id="led-card">
+      <h2>LED · 12 oreilles + 6 dos</h2>
+      <div class="muted" style="margin:-4px 0 12px">
+        Pilotage LED par LED : 6 mini-LED par oreille (1 = midi, sens horaire) et
+        6 LED de dos. Le mode <b>Identifier</b> allume une seule LED à la fois.
+        <br>Les 4 voyants des jonctions/queue ne sont pas ici : ce sont les
+        témoins de batterie (câblés, non colorables).
+      </div>
+
+      <!-- bandeau du mode Identifier (caché tant qu'il n'est pas lancé) -->
+      <div id="led-ident" class="ledgrp" style="margin-bottom:14px;display:none">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <div class="ledtitre" style="margin:0">LED allumée : <span id="ident-nom">—</span></div>
+            <div class="muted" id="ident-idx">—</div>
+          </div>
+          <div class="spacer"></div>
+          <button id="ident-prev">◀ Précédente</button>
+          <button id="ident-next">Suivante ▶</button>
+          <button id="ident-fin" class="danger">Terminer</button>
+        </div>
+        <div class="muted" style="margin-top:8px">
+          La LED en cours est en <span style="color:#22d3ee;font-weight:600">cyan vif</span>,
+          toutes les autres éteintes. Avance avec <b>Suivante</b> et relève, pour chaque
+          index, la diode qui s'allume.
+        </div>
+      </div>
+
+      <!-- LED individuelles, groupées par zone, remplies par JS -->
+      <div id="led-grid"></div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center">
+        <button id="led-identifier">Identifier les LED</button>
+      </div>
+      <div class="muted" id="led-status" style="margin-top:8px"></div>
+    </section>
+
+    <section class="card">
+      <h2>Interactions récentes</h2>
+      <div class="events" id="events"><div class="muted">En attente d'événements…</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Dialogue IA</h2>
+      <div class="muted" style="margin-bottom:10px">La mémoire du dialogue est conservée sur le robot (voix cloud). Tu peux la réinitialiser.</div>
+      <button class="danger" id="clear-ia">Réinitialiser la mémoire du dialogue</button>
+      <div class="muted" id="ia-status" style="margin-top:8px"></div>
+    </section>
 
     <!-- Charge par articulation -->
     <section class="card large">
@@ -274,13 +287,18 @@ function rendu(s){
   // — Humeur —
   const e = s.emotion || {};
   $("#emo-state").textContent = e.state || "—";
-  const val = num(e.valence)? Math.max(-1,Math.min(1, e.valence)) : 0;
-  const aro = num(e.arousal)? Math.max(-1,Math.min(1, e.arousal)) : 0;
-  $("#emo-pt").style.left = ((val+1)/2*100)+"%";
-  $("#emo-pt").style.top  = ((1-(aro+1)/2)*100)+"%";
-  if (num(e.satiety)){ const p=Math.round(to01(e.satiety)*100); $("#sat-v").textContent=p+" %"; $("#sat-g").style.width=p+"%"; }
+  // Le robot publie valence / arousal / satiety sur une échelle 0–100
+  // (relevé réel : valence 50 = neutre, arousal ≈ 3 en sommeil). Le plan place
+  // la valence de gauche (0, déplaisir) à droite (100, plaisir), et l'éveil du
+  // bas (0, calme) au haut (100, éveil). Pas de recentrage en −1..1 : la valeur
+  // EST déjà un pourcentage de position.
+  const pct = (x)=> Math.max(0, Math.min(100, x));
+  if (num(e.valence)) $("#emo-pt").style.left = pct(e.valence) + "%";
+  if (num(e.arousal)) $("#emo-pt").style.top  = (100 - pct(e.arousal)) + "%";
+  if (num(e.satiety)){ const p=Math.round(pct(e.satiety)); $("#sat-v").textContent=p+" %"; $("#sat-g").style.width=p+"%"; }
   else { $("#sat-v").textContent="—"; $("#sat-g").style.width="0%"; }
-  if (num(e.fatigue)){ const p=Math.round(to01(e.fatigue)*100); $("#fat-v").textContent=p+" %"; $("#fat-g").style.width=p+"%"; }
+  // fatigue_status est un CODE d'état (0 = aucune), pas un pourcentage : affiché tel quel.
+  if (num(e.fatigue)){ $("#fat-v").textContent = e.fatigue; $("#fat-g").style.width = pct(e.fatigue)+"%"; }
   else { $("#fat-v").textContent = (e.fatigue==null? "—" : String(e.fatigue)); $("#fat-g").style.width="0%"; }
   $("#emo-note").textContent = (e.valence==null && e.arousal==null)
     ? "Aucune donnée d'humeur reçue (le robot ne pousse peut-être pas encore emotion-update)." : "";
@@ -370,56 +388,179 @@ $("#vol").onchange = () => {
 };
 litVolume();
 
-// — LED : deux groupes indépendants (2 à la tête, 6 sur le corps).
+// — LED : 12 mini-LED d'oreilles + 6 de dos, adressables INDIVIDUELLEMENT.
 // La trame UDP fixe TOUTES les LED d'un coup : on renvoie donc toujours l'état
-// des deux groupes, sinon régler l'un éteindrait l'autre.
-const LED_PALETTE = ["#ffffff","#ff2d2d","#12c912","#2b6bff","#22d3ee","#a78bfa","#fab219","#000000"];
-const ledEtat = { tete:"#22d3ee", corps:"#22d3ee" };
+// complet, sinon régler une LED éteindrait les autres.
+// Backend /api/led : {head:[12×[r,v,b]], body:[6×[r,v,b]]}.
+// Cartographie relevée sur le robot (29/07), oreilles 6 mini-LED chacune
+// (1 = midi, sens horaire) : head[0..5]=D1..D6 (oreille droite) ;
+// head[6]=G1, head[7]=G6, head[8]=G5, head[9]=G4, head[10]=G3, head[11]=G2
+// (oreille gauche). body[0..5]=dos 1..6.
+const LED_OFF = "#000000";
+const LED_CYAN = [34, 211, 238];         // repère du mode Identifier
+const ledEtat = { head: Array(12).fill("#22d3ee"), body: Array(6).fill("#22d3ee") };
 
-document.querySelectorAll("[data-pal]").forEach(zone=>{
-  const grp = zone.dataset.pal;
-  zone.innerHTML = LED_PALETTE.map(c=>
-    `<button type="button" data-grp="${grp}" data-hex="${c}" title="${c}"
-             style="background:${c}"></button>`).join("");
-});
-document.querySelectorAll("[data-hex]").forEach(b=> b.onclick = ()=>{
-  const g = b.dataset.grp;
-  ledEtat[g] = b.dataset.hex;
-  document.querySelector(`.ledpick[data-grp="${g}"]`).value = b.dataset.hex;
-  envoieLed();
-});
-document.querySelectorAll(".ledpick").forEach(inp=>{
-  inp.oninput = ()=>{ ledEtat[inp.dataset.grp] = inp.value; };
-  inp.onchange = ()=>{ ledEtat[inp.dataset.grp] = inp.value; envoieLed(); };
-});
+// grp = head/body, i = index dans la trame, nom = LED physique, zone = regroupement.
+const LED_DEFS = [
+  {grp:"head", i:0,  nom:"D1", zone:"Oreille droite"},
+  {grp:"head", i:1,  nom:"D2", zone:"Oreille droite"},
+  {grp:"head", i:2,  nom:"D3", zone:"Oreille droite"},
+  {grp:"head", i:3,  nom:"D4", zone:"Oreille droite"},
+  {grp:"head", i:4,  nom:"D5", zone:"Oreille droite"},
+  {grp:"head", i:5,  nom:"D6", zone:"Oreille droite"},
+  {grp:"head", i:6,  nom:"G1", zone:"Oreille gauche"},
+  {grp:"head", i:11, nom:"G2", zone:"Oreille gauche"},
+  {grp:"head", i:10, nom:"G3", zone:"Oreille gauche"},
+  {grp:"head", i:9,  nom:"G4", zone:"Oreille gauche"},
+  {grp:"head", i:8,  nom:"G5", zone:"Oreille gauche"},
+  {grp:"head", i:7,  nom:"G6", zone:"Oreille gauche"},
+  {grp:"body", i:0,  nom:"Dos 1", zone:"Dos"},
+  {grp:"body", i:1,  nom:"Dos 2", zone:"Dos"},
+  {grp:"body", i:2,  nom:"Dos 3", zone:"Dos"},
+  {grp:"body", i:3,  nom:"Dos 4", zone:"Dos"},
+  {grp:"body", i:4,  nom:"Dos 5", zone:"Dos"},
+  {grp:"body", i:5,  nom:"Dos 6", zone:"Dos"},
+];
+// — rendu : deux cercles d'oreille (6 points, 1 = midi, sens horaire) + le dos en rangée —
+const ledGrid = $("#led-grid");
+const CERCLE = 168, RAYON = 52, PT = 30, RLAB = 74;   // px
+
+function pointOreille(d, n){
+  const num = parseInt(String(d.nom).replace(/\D/g, ""), 10) || 1;   // 1..6
+  const ang = (-90 + (num - 1) * 60) * Math.PI / 180;                // 1 = midi, sens horaire
+  const x  = CERCLE/2 + RAYON * Math.cos(ang);
+  const y  = CERCLE/2 + RAYON * Math.sin(ang);
+  const lx = CERCLE/2 + RLAB  * Math.cos(ang);
+  const ly = CERCLE/2 + RLAB  * Math.sin(ang);
+  return `
+    <input type="color" class="ledpick" data-led="${n}" value="${ledEtat[d.grp][d.i]}"
+           title="${d.nom} · ${d.grp}_led[${d.i}]"
+           style="position:absolute;left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;
+                  width:${PT}px;height:${PT}px;transform:translate(-50%,-50%);padding:0;
+                  border-radius:50%;border:2px solid var(--border-strong);cursor:pointer">
+    <div style="position:absolute;left:${lx.toFixed(1)}px;top:${ly.toFixed(1)}px;
+                transform:translate(-50%,-50%);font-size:10px;color:var(--text-muted)">${num}</div>`;
+}
+function celluleOreille(zone){
+  const pts = LED_DEFS.map((d,n)=>({d,n})).filter(x=>x.d.zone===zone)
+                      .map(({d,n})=>pointOreille(d,n)).join("");
+  return `<div class="ledgrp" style="text-align:center">
+    <div class="ledtitre">${zone}</div>
+    <div style="position:relative;width:${CERCLE}px;height:${CERCLE}px;margin:4px auto;
+                border:1px dashed var(--border);border-radius:50%">${pts}</div>
+  </div>`;
+}
+function celluleDos(){
+  const lignes = LED_DEFS.map((d,n)=>({d,n})).filter(x=>x.d.zone==="Dos").map(({d,n})=>`
+    <div style="display:flex;align-items:center;gap:8px;margin:5px 0">
+      <input type="color" class="ledpick" data-led="${n}" value="${ledEtat[d.grp][d.i]}"
+             title="${d.nom} · ${d.grp}_led[${d.i}]"
+             style="width:42px;height:26px;padding:1px;border-radius:6px;
+                    border:1px solid var(--border-strong);background:var(--surface-3);cursor:pointer">
+      <span class="muted" style="font-size:12px">${d.nom}</span>
+    </div>`).join("");
+  return `<div class="ledgrp">
+    <div class="ledtitre">Dos <span class="muted" style="font-weight:400">· haut = 1</span></div>
+    ${lignes}</div>`;
+}
+function celluleActions(){
+  return `<div class="ledgrp" style="display:flex;flex-direction:column;gap:8px">
+    <div class="ledtitre">Toutes les LED</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="color" id="led-uniforme-pick" value="#22d3ee"
+             title="Couleur à appliquer à toutes les LED"
+             style="width:42px;height:38px;padding:2px;border-radius:9px;
+                    border:1px solid var(--border-strong);background:var(--surface-3);cursor:pointer">
+      <button id="led-uniforme" style="flex:1" title="Applique la couleur choisie à toutes les LED">Couleur unique</button>
+    </div>
+    <button id="led-defaut" title="Rouge d'origine du constructeur (194, 0, 0)">Couleurs d'origine</button>
+    <button id="led-off" class="danger">Tout éteindre</button>
+  </div>`;
+}
+ledGrid.innerHTML =
+  `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;align-items:stretch">
+     ${celluleActions()}${celluleOreille("Oreille gauche")}${celluleOreille("Oreille droite")}${celluleDos()}
+   </div>`;
 
 function rvbDepuisHex(h){
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h||"");
   return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : [0,0,0];
 }
-async function envoieLed(){
-  const t = rvbDepuisHex(ledEtat.tete), c = rvbDepuisHex(ledEtat.corps);
+function trameActuelle(){
+  return { head: ledEtat.head.map(rvbDepuisHex),
+           body: ledEtat.body.map(rvbDepuisHex) };
+}
+async function envoieLed(trame){
+  const t = trame || trameActuelle();
   $("#led-status").textContent = "envoi…";
   try {
     const r = await fetch(API+"/api/led", {method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({head:[t,t], body:[c,c,c,c,c,c]})});
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify(t)});
     $("#led-status").textContent = r.ok ? "Couleurs envoyées." : "refusé (robot connecté ?)";
   } catch(e){ $("#led-status").textContent = "service injoignable"; }
 }
-function poseCouleurs(hex){
-  ledEtat.tete = ledEtat.corps = hex;
-  document.querySelectorAll(".ledpick").forEach(i=> i.value = hex);
+function rafraichitPickers(){
+  ledGrid.querySelectorAll(".ledpick").forEach(inp=>{
+    const d = LED_DEFS[+inp.dataset.led]; inp.value = ledEtat[d.grp][d.i];
+  });
 }
-$("#led-off").onclick = ()=>{ poseCouleurs("#000000"); envoieLed(); };
+
+// réglages LED par LED
+ledGrid.querySelectorAll(".ledpick").forEach(inp=>{
+  const d = LED_DEFS[+inp.dataset.led];
+  inp.oninput  = ()=>{ ledEtat[d.grp][d.i] = inp.value; };
+  inp.onchange = ()=>{ ledEtat[d.grp][d.i] = inp.value; if (!identActif) envoieLed(); };
+});
+
+// couleur unique appliquée à toutes les LED
+$("#led-uniforme").onclick = ()=>{
+  const h = $("#led-uniforme-pick").value;
+  ledEtat.head = Array(12).fill(h); ledEtat.body = Array(6).fill(h);
+  rafraichitPickers(); envoieLed();
+};
+$("#led-off").onclick = ()=>{
+  ledEtat.head = Array(12).fill(LED_OFF); ledEtat.body = Array(6).fill(LED_OFF);
+  rafraichitPickers(); envoieLed();
+};
 $("#led-defaut").onclick = async ()=>{
   $("#led-status").textContent = "envoi…";
   try {
     const r = await fetch(API+"/api/led/defaut", {method:"POST"});
-    if (r.ok){ poseCouleurs("#c20000");   // 194,0,0
+    if (r.ok){ ledEtat.head = Array(12).fill("#c20000"); ledEtat.body = Array(6).fill("#c20000"); // 194,0,0
+               rafraichitPickers();
                $("#led-status").textContent = "Couleurs d'origine rétablies."; }
     else $("#led-status").textContent = "refusé (robot connecté ?)";
   } catch(e){ $("#led-status").textContent = "service injoignable"; }
+};
+
+// — Mode Identifier : allume une seule LED à la fois —
+let identActif = false, identPas = 0;
+function identTrame(pas){
+  const head = Array.from({length:12}, ()=>[0,0,0]);
+  const body = Array.from({length:6},  ()=>[0,0,0]);
+  const d = LED_DEFS[pas];
+  (d.grp==="head" ? head : body)[d.i] = LED_CYAN.slice();
+  return { head, body };
+}
+function identAffiche(){
+  const d = LED_DEFS[identPas];
+  $("#ident-nom").textContent = `${d.nom} (${d.zone})`;
+  $("#ident-idx").textContent = `${d.grp}_led[${d.i}] — LED ${identPas+1} / ${LED_DEFS.length}`;
+  envoieLed(identTrame(identPas));
+}
+$("#led-identifier").onclick = ()=>{
+  identActif = true; identPas = 0;
+  $("#led-ident").style.display = "block";
+  $("#led-identifier").disabled = true;
+  identAffiche();
+};
+$("#ident-prev").onclick = ()=>{ identPas = (identPas - 1 + LED_DEFS.length) % LED_DEFS.length; identAffiche(); };
+$("#ident-next").onclick = ()=>{ identPas = (identPas + 1) % LED_DEFS.length; identAffiche(); };
+$("#ident-fin").onclick  = ()=>{
+  identActif = false;
+  $("#led-ident").style.display = "none";
+  $("#led-identifier").disabled = false;
+  envoieLed();  // rétablit l'état choisi dans les pickers
 };
 
 // — Écran de la tête : texte et animations (via le service embarqué) —

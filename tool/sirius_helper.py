@@ -1752,12 +1752,20 @@ async def eyes_center():
 # ═══════════════════════════════ LED ═══════════════════════════════
 # Les LED ne sont accessibles NI par le WebSocket NI par le REST : la seule voie
 # connue est le canal UDP 8768, dont le nœud republie sur
-# /robot_led_controller/led_colors. Format relevé dans l'add-on Blender officiel
-# (get_led_data_for_frame) : deux LED de tête, six LED de corps, en RVB 0-255.
-#   {"head_led": [[r,g,b], [r,g,b]], "body_led": [[r,g,b] × 6]}
+# /robot_led_controller/led_colors.
+#   {"head_led": [[r,g,b] × N], "body_led": [[r,g,b] × 6]}
+# L'add-on Blender officiel n'envoie que 2 entrées de tête (les 2 oreilles en
+# bloc) et 6 de corps. MAIS le firmware accepte des tableaux head_led bien plus
+# longs : cartographie relevée sur le robot (29/07) — les 12 mini-LED des
+# oreilles sont adressables une par une avec head_led de longueur 12 :
+#   head[0..5]  = oreille DROITE  D1..D6
+#   head[6]=G1, head[7]=G6, head[8]=G5, head[9]=G4, head[10]=G3, head[11]=G2
+# (oreille GAUCHE ; G1 = midi, puis sens horaire). body[0..5] = dos 1..6.
+# Les 4 voyants des jonctions/queue ne sont PAS des LED RVB : ce sont les
+# témoins de batterie (manuel officiel), non pilotables par ce canal.
 # ⚠ L'UDP ne renvoie aucun accusé : un « ok » signifie que la trame est partie.
 LED_UDP_PORT = 8768
-LED_TETE = 2
+LED_TETE = 12   # 12 mini-LED d'oreilles individuelles (l'add-on n'en pilotait que 2)
 LED_CORPS = 6
 # Couleur d'origine relevée dans l'add-on officiel (valeurs de repli de
 # export_led_data) : un rouge profond, identique pour la tête et le corps.

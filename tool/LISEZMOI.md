@@ -275,6 +275,29 @@ ecran_tete.sh                diagnostic de l'écran de la tête (avancé, SSH)
 
 ---
 
+## Nouveautés de la v2.8.5
+
+- **LED — pilotage mini-LED par mini-LED.** Les deux oreilles s'affichent en
+  cercles (6 points chacune, 1 = midi, sens horaire) et se pilotent LED par LED,
+  comme les 6 LED de dos ; un mode **Identifier** allume une diode à la fois. Les
+  4 voyants des jonctions/queue ne sont pas colorables : ce sont les témoins de
+  batterie (relevé du manuel officiel). Le helper passe de 2 à 12 canaux de tête.
+- **Plan Humeur corrigé.** Valence / éveil / satiété sont lus sur l'échelle 0–100
+  du robot : le curseur reflète enfin l'état réel (couché = calme, en bas) au lieu
+  de rester bloqué en haut.
+- **Vie du robot réorganisée** : Volume audio et Écran de la tête remontés,
+  Interactions récentes et Dialogue IA regroupés au-dessus de la charge moteurs.
+- **Interface principale** : bouton **Reset** dans la barre du haut, et
+  **Recovery** (affiché **Relever** en français) corrigé — il déclenche la vraie
+  mécanique de relevage après chute (`/api/recovery`), distincte de la remise debout.
+- **Déambulation** : un bandeau en tête de page rappelle que rien ne fonctionne
+  sans le service embarqué (à lancer en SSH / par `deambulation_robot.bat`), avec
+  lien vers le wiki ; et **anticipation du vide renforcée** (nœud v16) — arrêt
+  immédiat dès qu'un vide est suspecté, et détection d'un bord franc sur une seule
+  zone pour rattraper les approches en diagonale. ⚠ Réduit le risque, ne rend pas
+  la table sûre : reste à portée de main.
+- **README anglais** ajouté à côté du LISEZMOI.
+
 ## Nouveautés de la v2.8.4
 
 **Les nouveaux outils sont des onglets de l'interface principale** — plus rien
